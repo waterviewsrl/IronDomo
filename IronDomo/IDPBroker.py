@@ -5,7 +5,7 @@ A minimal implementation of IDP
 Author: Matteo Ferrabone <matteo.ferrabone@gmail.com>
 """
 
-import os
+import os, os.path
 import sys
 import logging
 import time
@@ -45,6 +45,9 @@ class Worker(object):
         self.expiry = time.time() + 1e-3*lifetime
         self.clear = clear
 
+def countFiles(path):
+    return len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
+
 class IronDomoBroker(object):
     """
     Irondomo Protocol broker
@@ -71,12 +74,24 @@ class IronDomoBroker(object):
     verbose = False # Print activity to stdout
 
     credentials = None
+    credentialsPath = None
+    credentialsNum = None
 
     # ---------------------------------------------------------------------
 
-    def __init__(self, verbose=False, credentials=None, public_keys_dir=None):
+    def loadKeys(self):
+        cnt= countFiles(self.credentialsPath)
+        if (cnt is not self.credentialsNum):
+            self.credentialsNum = cnt
+            logging.info('Updating Certificates on Location: {0} ({1} Files)'.format(self.credentialsPath, self.credentialsNum))
+            self.auth.configure_curve(domain='*', location=self.credentialsPath)
+
+
+    def __init__(self, verbose=False, credentials=None, public_keys_dir=None, iron=True):
         """Initialize broker state."""
         self.verbose = verbose
+        logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+                level=logging.INFO)
         self.credentials = credentials
         self.public_keys_dir = public_keys_dir
         self.services = {}
@@ -88,21 +103,26 @@ class IronDomoBroker(object):
         self.socketclear.linger = 0
         self.socketcurve = self.ctx.socket(zmq.ROUTER)
         self.socketcurve.linger = 0
-        if (self.credentials is not None and self.public_keys_dir is not None):
+        if (self.credentials is not None):
             # Start an authenticator for this context.
             self.auth = ThreadAuthenticator(self.ctx)
             self.auth.start()
             self.auth.allow('127.0.0.1')
             # Tell authenticator to use the certificate in a directory
-            self.auth.configure_curve(domain='*', location=public_keys_dir)
+            self.credentialsPath = public_keys_dir
+            if (self.public_keys_dir is not None):
+                self.loadKeys()
+            else:
+                self.auth.configure_curve(domain='*', location=zmq.auth.CURVE_ALLOW_ANY)
+            #self.credentialsNum = countFiles(self.credentialsPath)
+            #logging.info('Configuring ThreadAuthenticator on Location: {0} ({1} Files)'.format(self.credentialsPath, self.credentialsNum))
+            #self.auth.configure_curve(domain='*', location=public_keys_dir)
             self.socketcurve.curve_publickey = self.credentials[0]
             self.socketcurve.curve_secretkey = self.credentials[1]
             self.socketcurve.curve_server = True
         self.poller = zmq.Poller()
         self.poller.register(self.socketclear, zmq.POLLIN)
         self.poller.register(self.socketcurve, zmq.POLLIN)
-        logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
-                level=logging.INFO)
 
     # ---------------------------------------------------------------------
 
@@ -281,6 +301,8 @@ class IronDomoBroker(object):
         """Send heartbeats to idle workers if it's time"""
         now =  time.time()
         if (now > self.heartbeat_at):
+            if(self.public_keys_dir is not None):
+               self.loadKeys()
             for worker in self.waiting:
                 logging.warning('Heart: {0}'.format(worker.identity))
                 self.send_to_worker(worker, IDP.W_HEARTBEAT, None, None)

@@ -14,7 +14,7 @@ def main():
     keys_dir = os.path.join(base_dir, 'certificates')
     public_keys_dir = os.path.join(base_dir, 'public_keys')
     secret_keys_dir = os.path.join(base_dir, 'private_keys')
-    client_secret_file = os.path.join(secret_keys_dir, "client.key_secret")
+    client_secret_file = os.path.join(secret_keys_dir, "worker.key_secret")
     client_public, client_secret = zmq.auth.load_certificate(client_secret_file)
     server_secret_file = os.path.join(secret_keys_dir, "server.key_secret")
     print('Server Secret File: {0}'.format(server_secret_file))

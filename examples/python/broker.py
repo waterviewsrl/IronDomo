@@ -30,6 +30,7 @@ def main():
 
     print('public_keys_dir: {0}'.format(public_keys_dir))
     broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret), public_keys_dir)
+    #broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret))
     broker.bind("tcp://*:5555", "tcp://*:5556")
     broker.mediate()
 

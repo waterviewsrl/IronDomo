@@ -15,11 +15,11 @@ def main():
     secret_keys_dir = os.path.join(base_dir, 'private_keys')
     client_secret_file = os.path.join(secret_keys_dir, "client.key_secret")
     client_public, client_secret = zmq.auth.load_certificate(client_secret_file)
-    server_secret_file = os.path.join(secret_keys_dir, "server.key_secret")
-    print('Server Secret File: {0}'.format(server_secret_file))
-    server_public, server_secret = zmq.auth.load_certificate(server_secret_file)
+    server_public_file = os.path.join(public_keys_dir, "server.key")
+    print('Server Secret File: {0}'.format(server_public_file))
+    server_public, dummy  = zmq.auth.load_certificate(server_public_file)
 
-    print('Server Keys: {0} ||| {1}'.format(server_public, server_secret))
+    print('Server Key: {0}'.format(server_public))
 
     client = IDPClient.IronDomoClient("tcp://localhost:5556", verbose, (server_public, client_public, client_secret))
     count = 0
