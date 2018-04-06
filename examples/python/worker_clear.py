@@ -8,7 +8,7 @@ from IronDomo import IDPWorker
 
 def main():
     verbose = '-v' in sys.argv
-    worker = IDPWorker.IronDomoWorker("tcp://localhost:6666", b"echo", verbose)
+    worker = IDPWorker.IronDomoWorker("tcp://localhost:5555", b"echo", verbose)
     reply = None
     while True:
         request = worker.recv(reply)

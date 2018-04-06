@@ -31,12 +31,13 @@ class IronDomoWorker(object):
 
     timeout = 2500 # poller timeout
     verbose = False # Print activity to stdout
+    credentials = None
 
     # Return address, if any
     reply_to_clear = None
     reply_to_curve = None
 
-    def __init__(self, broker, service, verbose=False):
+    def __init__(self, broker, service, verbose=False, credentials=None):
         self.broker = broker
         self.service = service
         self.verbose = verbose
@@ -45,6 +46,7 @@ class IronDomoWorker(object):
         logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
                 level=logging.INFO)
         self.reconnect_to_broker()
+        self.credentials = credentials
 
 
     def reconnect_to_broker(self):
@@ -54,6 +56,11 @@ class IronDomoWorker(object):
             self.worker.close()
         self.worker = self.ctx.socket(zmq.DEALER)
         self.worker.linger = 0
+        if (self.credentials is not None):
+            logging.info("I: connecting with CURVE")
+            self.worker.curve_serverkey = self.credentials[0]
+            self.worker.curve_publickey = self.credentials[1]
+            self.worker.curve_secretkey = self.credentials[2]
         self.worker.connect(self.broker)
         self.poller.register(self.worker, zmq.POLLIN)
         if self.verbose:

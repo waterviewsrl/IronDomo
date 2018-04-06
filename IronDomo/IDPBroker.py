@@ -37,11 +37,13 @@ class Worker(object):
     address = None # Address to route to
     service = None # Owning service, if known
     expiry = None # expires at this point, unless heartbeat
+    clear = None
 
-    def __init__(self, identity, address, lifetime):
+    def __init__(self, identity, address, lifetime, clear):
         self.identity = identity
         self.address = address
         self.expiry = time.time() + 1e-3*lifetime
+        self.clear = clear
 
 class IronDomoBroker(object):
     """
@@ -59,7 +61,6 @@ class IronDomoBroker(object):
     ctx = None # Our context
     socketclear = None # Socket for clients & workers
     socketcurve = None # Socket for clients & workers
-    socketout = None # Socket for clients & workers
     poller = None # our Poller
 
     heartbeat_at = None# When to send HEARTBEAT
@@ -97,12 +98,9 @@ class IronDomoBroker(object):
             self.socketcurve.curve_publickey = self.credentials[0]
             self.socketcurve.curve_secretkey = self.credentials[1]
             self.socketcurve.curve_server = True
-        self.socketout = self.ctx.socket(zmq.ROUTER)
-        self.socketout.linger = 0
         self.poller = zmq.Poller()
         self.poller.register(self.socketclear, zmq.POLLIN)
         self.poller.register(self.socketcurve, zmq.POLLIN)
-        self.poller.register(self.socketout, zmq.POLLIN)
         logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
                 level=logging.INFO)
 
@@ -122,7 +120,7 @@ class IronDomoBroker(object):
        if (IDP.C_CLIENT == header):
            self.process_client(sender, msg, clear)
        elif (IDP.W_WORKER == header):
-           self.process_worker(sender, msg)
+           self.process_worker(sender, msg, clear)
        else:
            logging.error("E: invalid message:")
            dump(msg)
@@ -139,8 +137,6 @@ class IronDomoBroker(object):
                 self.route(self.socketclear, True)
             elif (self.socketcurve in socks):
                 self.route(self.socketcurve, False)
-            elif (self.socketout in socks):
-                self.route(self.socketout)
             self.purge_workers()
             self.send_heartbeats()
 
@@ -162,7 +158,7 @@ class IronDomoBroker(object):
         else:
             self.dispatch(self.require_service(service), msg, clear)
 
-    def process_worker(self, sender, msg):
+    def process_worker(self, sender, msg, clear):
         """Process message sent to us by a worker."""
         assert len(msg) >= 1 # At least, command
 
@@ -170,7 +166,7 @@ class IronDomoBroker(object):
 
         worker_ready = hexlify(sender) in self.workers
 
-        worker = self.require_worker(sender)
+        worker = self.require_worker(sender, clear)
 
         if (IDP.W_REPLY == command):
             if (worker_ready):
@@ -237,13 +233,13 @@ class IronDomoBroker(object):
             worker.service.waiting.remove(worker)
         self.workers.pop(worker.identity)
 
-    def require_worker(self, address):
+    def require_worker(self, address, clear):
         """Finds the worker (creates if necessary)."""
         assert (address is not None)
         identity = hexlify(address)
         worker = self.workers.get(identity)
         if (worker is None):
-            worker = Worker(identity, address, self.HEARTBEAT_EXPIRY)
+            worker = Worker(identity, address, self.HEARTBEAT_EXPIRY, clear)
             self.workers[identity] = worker
             if self.verbose:
                 logging.info("I: registering new worker: %s", identity)
@@ -260,15 +256,14 @@ class IronDomoBroker(object):
 
         return service
 
-    def bind(self, endpointclear, endpointcurve, endpointout):
+    def bind(self, endpointclear, endpointcurve):
         """Bind broker to endpoint, can call this multiple times.
 
         We use a single socket for both clients and workers.
         """
         self.socketclear.bind(endpointclear)
         self.socketcurve.bind(endpointcurve)
-        self.socketout.bind(endpointout)
-        logging.info("I: IDP broker/0.1.1 is active at {0} / {1} / {2}".format(endpointclear, endpointcurve, endpointout))
+        logging.info("I: IDP broker/0.1.1 is active at {0} / {1}".format(endpointclear, endpointcurve))
 
     def service_internal(self, service, msg):
         """Handle internal service according to 8/MMI specification"""
@@ -349,6 +344,9 @@ class IronDomoBroker(object):
         if self.verbose:
             logging.info("I: sending %r to worker", command)
             dump(msg)
-
-        self.socketout.send_multipart(msg)
+        
+        if (worker.clear):
+            self.socketclear.send_multipart(msg)
+        else:
+            self.socketcurve.send_multipart(msg)
 
