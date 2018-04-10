@@ -76,6 +76,7 @@ class IronDomoBroker(object):
     credentials = None
     credentialsPath = None
     credentialsNum = None
+    credentialsCallback = None
 
     # ---------------------------------------------------------------------
 
@@ -87,13 +88,12 @@ class IronDomoBroker(object):
             self.auth.configure_curve(domain='*', location=self.credentialsPath)
 
 
-    def __init__(self, verbose=False, credentials=None, public_keys_dir=None, iron=True):
+    def __init__(self, verbose=False, credentials=None, credentialsPath=None, credentialsCallback=None):
         """Initialize broker state."""
         self.verbose = verbose
         logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
                 level=logging.INFO)
         self.credentials = credentials
-        self.public_keys_dir = public_keys_dir
         self.services = {}
         self.workers = {}
         self.waiting = []
@@ -109,14 +109,14 @@ class IronDomoBroker(object):
             self.auth.start()
             self.auth.allow('127.0.0.1')
             # Tell authenticator to use the certificate in a directory
-            self.credentialsPath = public_keys_dir
-            if (self.public_keys_dir is not None):
+            self.credentialsPath = credentialsPath
+            self.credentialsCallback = credentialsCallback
+            if (self.credentialsCallback is not None):
+                self.auth.configure_curve_callback('*', credentials_provider=self.credentialsCallback)
+            elif (self.credentialsPath is not None):
                 self.loadKeys()
             else:
                 self.auth.configure_curve(domain='*', location=zmq.auth.CURVE_ALLOW_ANY)
-            #self.credentialsNum = countFiles(self.credentialsPath)
-            #logging.info('Configuring ThreadAuthenticator on Location: {0} ({1} Files)'.format(self.credentialsPath, self.credentialsNum))
-            #self.auth.configure_curve(domain='*', location=public_keys_dir)
             self.socketcurve.curve_publickey = self.credentials[0]
             self.socketcurve.curve_secretkey = self.credentials[1]
             self.socketcurve.curve_server = True
@@ -301,7 +301,7 @@ class IronDomoBroker(object):
         """Send heartbeats to idle workers if it's time"""
         now =  time.time()
         if (now > self.heartbeat_at):
-            if(self.public_keys_dir is not None):
+            if((self.credentialsPath is not None) and (self.credentialsCallback is None)):
                self.loadKeys()
             for worker in self.waiting:
                 logging.warning('Heart: {0}'.format(worker.identity))

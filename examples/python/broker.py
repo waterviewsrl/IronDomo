@@ -11,7 +11,26 @@ import sys
 import logging
 import zmq.auth
 
+from sqlalchemy import cast, and_
+from sqlalchemy.dialects.postgresql import insert, JSONB
+from sqlalchemy.orm import contains_eager
+
+from waterviewDB import init_standalone_db
+
+
 from IronDomo import IDPBroker
+
+
+class Autorizer(object):
+    db = None
+
+    def __init__(self):
+        db = None
+       
+    def callback(self, domain, key):
+            logging.warning('Autorizing: {0}, {1}'.format(domain, key))
+            return True
+
 
 def main():
     """create and start new broker"""
@@ -22,6 +41,7 @@ def main():
     public_keys_dir = os.path.join(base_dir, 'public_keys')
     secret_keys_dir = os.path.join(base_dir, 'private_keys')
 
+    autorizer = Autorizer()
 
     server_secret_file = os.path.join(secret_keys_dir, "server.key_secret")
     print('Server Secret File: {0}'.format(server_secret_file))
@@ -29,7 +49,7 @@ def main():
     print('Server Keys: {0} ||| {1}'.format(server_public, server_secret))
 
     print('public_keys_dir: {0}'.format(public_keys_dir))
-    broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret), public_keys_dir)
+    broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret), credentialsCallback=autorizer)
     #broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret))
     broker.bind("tcp://*:5555", "tcp://*:5556")
     broker.mediate()
