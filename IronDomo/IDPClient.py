@@ -8,7 +8,9 @@ import logging
 import zmq
 
 from IronDomo import IDP
+
 from IronDomo.IDPHelpers import dump
+from IronDomo.IDPHelpers import Req
 
 class IronDomoClient(object):
     """Irondomo Protocol Client API, Python version.
@@ -36,16 +38,13 @@ class IronDomoClient(object):
     def reconnect_to_broker(self):
         """Connect or reconnect to broker"""
         if self.client:
-            self.poller.unregister(self.client)
+            self.poller.unregister(self.client.socket)
             self.client.close()
-        self.client = self.ctx.socket(zmq.REQ)
-        self.client.linger = 0
+        self.client = Req(self.broker, ctx=self.ctx) 
         if (self.credentials is not None):
-            self.client.curve_serverkey = self.credentials[0]
-            self.client.curve_publickey = self.credentials[1]
-            self.client.curve_secretkey = self.credentials[2]
-        self.client.connect(self.broker)
-        self.poller.register(self.client, zmq.POLLIN)
+            self.client.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
+        self.client.connect()
+        self.poller.register(self.client.socket, zmq.POLLIN)
         if self.verbose:
             logging.info("I: connecting to broker at %s...", self.broker)
 
@@ -64,14 +63,14 @@ class IronDomoClient(object):
 
         retries = self.retries
         while retries > 0:
-            self.client.send_multipart(request)
+            self.client.send(request)
             try:
                 items = self.poller.poll(self.timeout)
             except KeyboardInterrupt:
                 break # interrupted
 
             if items:
-                msg = self.client.recv_multipart()
+                msg = self.client.recv()
                 if self.verbose:
                     logging.info("I: received reply:")
                     dump(msg)
@@ -98,5 +97,6 @@ class IronDomoClient(object):
 
         return reply
 
-    def destroy(self):
-        self.context.destroy()
+    def close(self):
+        self.client.close()
+        self.ctx.destroy()

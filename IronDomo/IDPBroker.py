@@ -16,6 +16,7 @@ import zmq
 # local
 from IronDomo import IDP
 from IronDomo.IDPHelpers import dump
+from IronDomo.IDPHelpers import Router
 import zmq.auth
 from zmq.auth.thread import ThreadAuthenticator
 
@@ -88,7 +89,7 @@ class IronDomoBroker(object):
             self.auth.configure_curve(domain='*', location=self.credentialsPath)
 
 
-    def __init__(self, verbose=False, credentials=None, credentialsPath=None, credentialsCallback=None):
+    def __init__(self, clear_connection_string, curve_connection_string, verbose=False, credentials=None, credentialsPath=None, credentialsCallback=None):
         """Initialize broker state."""
         self.verbose = verbose
         logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
@@ -99,10 +100,8 @@ class IronDomoBroker(object):
         self.waiting = []
         self.heartbeat_at = time.time() + 1e-3*self.HEARTBEAT_INTERVAL
         self.ctx = zmq.Context()
-        self.socketclear = self.ctx.socket(zmq.ROUTER)
-        self.socketclear.linger = 0
-        self.socketcurve = self.ctx.socket(zmq.ROUTER)
-        self.socketcurve.linger = 0
+        self.socketclear = Router(clear_connection_string, self.ctx)
+        self.socketcurve = Router(curve_connection_string, self.ctx, keys=self.credentials)
         if (self.credentials is not None):
             # Start an authenticator for this context.
             self.auth = ThreadAuthenticator(self.ctx)
@@ -117,17 +116,14 @@ class IronDomoBroker(object):
                 self.loadKeys()
             else:
                 self.auth.configure_curve(domain='*', location=zmq.auth.CURVE_ALLOW_ANY)
-            self.socketcurve.curve_publickey = self.credentials[0]
-            self.socketcurve.curve_secretkey = self.credentials[1]
-            self.socketcurve.curve_server = True
         self.poller = zmq.Poller()
-        self.poller.register(self.socketclear, zmq.POLLIN)
-        self.poller.register(self.socketcurve, zmq.POLLIN)
+        self.poller.register(self.socketclear.socket, zmq.POLLIN)
+        self.poller.register(self.socketcurve.socket, zmq.POLLIN)
 
     # ---------------------------------------------------------------------
 
     def route(self, socket, clear = None):
-       msg = socket.recv_multipart()
+       msg = socket.recv()
        if self.verbose:
            logging.info("I: received message:")
            dump(msg)
@@ -153,9 +149,9 @@ class IronDomoBroker(object):
                 socks = dict(self.poller.poll(self.HEARTBEAT_INTERVAL))
             except KeyboardInterrupt:
                 break # Interrupted
-            if (self.socketclear in socks):
+            if (self.socketclear.socket in socks):
                 self.route(self.socketclear, True)
-            elif (self.socketcurve in socks):
+            elif (self.socketcurve.socket in socks):
                 self.route(self.socketcurve, False)
             self.purge_workers()
             self.send_heartbeats()
@@ -195,7 +191,7 @@ class IronDomoBroker(object):
                 client = msg.pop(0)
                 empty = msg.pop(0) # ?
                 msg = [client, b'', IDP.C_CLIENT, worker.service.name] + msg
-                self.socketclear.send_multipart(msg)
+                self.socketclear.send(msg)
                 self.worker_waiting(worker)
             else:
                 logging.warning('IDP.W_REPLY expected, got: {0} from {1}'.format(command, worker.identity))
@@ -208,7 +204,7 @@ class IronDomoBroker(object):
                 client = msg.pop(0)
                 empty = msg.pop(0) # ?
                 msg = [client, b'', IDP.C_CLIENT, worker.service.name] + msg
-                self.socketcurve.send_multipart(msg)
+                self.socketcurve.send(msg)
                 self.worker_waiting(worker)
             else:
                 logging.warning('IDP.W_REPLY expected, got: {0} from {1}'.format(command, worker.identity))
@@ -276,14 +272,14 @@ class IronDomoBroker(object):
 
         return service
 
-    def bind(self, endpointclear, endpointcurve):
+    def bind(self):
         """Bind broker to endpoint, can call this multiple times.
 
         We use a single socket for both clients and workers.
         """
-        self.socketclear.bind(endpointclear)
-        self.socketcurve.bind(endpointcurve)
-        logging.info("I: IDP broker/0.1.1 is active at {0} / {1}".format(endpointclear, endpointcurve))
+        self.socketclear.bind()
+        self.socketcurve.bind()
+        logging.info("I: IDP broker/0.1.1 is active at {0} / {1}".format(self.socketclear.connection_string, self.socketcurve.connection_string))
 
     def service_internal(self, service, msg):
         """Handle internal service according to 8/MMI specification"""
@@ -295,7 +291,7 @@ class IronDomoBroker(object):
 
         # insert the protocol header and service name after the routing envelope ([client, ''])
         msg = msg[:2] + [IDP.C_CLIENT, service] + msg[2:]
-        self.socketclear.send_multipart(msg)
+        self.socketclear.send(msg)
 
     def send_heartbeats(self):
         """Send heartbeats to idle workers if it's time"""
@@ -368,7 +364,7 @@ class IronDomoBroker(object):
             dump(msg)
         
         if (worker.clear):
-            self.socketclear.send_multipart(msg)
+            self.socketclear.send(msg)
         else:
-            self.socketcurve.send_multipart(msg)
+            self.socketcurve.send(msg)
 

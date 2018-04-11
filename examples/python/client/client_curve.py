@@ -23,7 +23,7 @@ def main():
 
     client = IDPClient.IronDomoClient("tcp://localhost:5556", verbose, (server_public, client_public, client_secret))
     count = 0
-    while count < 10000:
+    while count < 10:
         request = "Hello world 1 -> {0}".format(count)
         try:
             reply = client.send(b"echo", request.encode())
@@ -35,6 +35,7 @@ def main():
             if reply is None:
                 break
         count += 1
+    client.close()
     print("%i requests/replies processed" % count)
 
 if __name__ == '__main__':

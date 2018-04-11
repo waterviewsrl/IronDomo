@@ -49,9 +49,9 @@ def main():
     print('Server Keys: {0} ||| {1}'.format(server_public, server_secret))
 
     print('public_keys_dir: {0}'.format(public_keys_dir))
-    broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret), credentialsCallback=autorizer)
+    broker = IDPBroker.IronDomoBroker("tcp://*:5555", "tcp://*:5556", verbose, (server_public, server_secret), credentialsCallback=autorizer)
     #broker = IDPBroker.IronDomoBroker(verbose, (server_public, server_secret))
-    broker.bind("tcp://*:5555", "tcp://*:5556")
+    broker.bind()
     broker.mediate()
 
 if __name__ == '__main__':

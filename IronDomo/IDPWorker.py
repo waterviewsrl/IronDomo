@@ -8,6 +8,7 @@ import time
 import zmq
 
 from IronDomo.IDPHelpers import dump
+from IronDomo.IDPHelpers import Dealer
 # IronDomo protocol constants:
 from IronDomo import IDP
 
@@ -64,18 +65,14 @@ class IronDomoWorker(object):
     def reconnect_to_broker(self):
         """Connect or reconnect to broker"""
         if self.worker:
-            self.poller.unregister(self.worker)
+            self.poller.unregister(self.worker.socket)
             self.worker.close()
-        self.worker = self.ctx.socket(zmq.DEALER)
-        self.worker.linger = 0
+        self.worker = Dealer(self.broker, ctx=self.ctx)
         if (self.credentials is not None):
-            logging.info("I: connecting with CURVE")
-            self.worker.curve_serverkey = self.credentials[0]
-            self.worker.curve_publickey = self.credentials[1]
-            self.worker.curve_secretkey = self.credentials[2]
-        self.worker.connect(self.broker)
+            self.worker.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
+        self.worker.connect()
         logging.info("I: After CONNECT ({0})".format(self.credentials))
-        self.poller.register(self.worker, zmq.POLLIN)
+        self.poller.register(self.worker.socket, zmq.POLLIN)
         if self.verbose:
             logging.info("I: connecting to broker at %s...", self.broker)
 
@@ -103,7 +100,7 @@ class IronDomoWorker(object):
         if self.verbose:
             logging.info("I: sending %s to broker", command)
             dump(msg)
-        self.worker.send_multipart(msg)
+        self.worker.send(msg)
 
 
     def recv(self, reply=None):
@@ -131,7 +128,7 @@ class IronDomoWorker(object):
                 break # Interrupted
 
             if items:
-                msg = self.worker.recv_multipart()
+                msg = self.worker.recv()
                 if self.verbose:
                     logging.info("I: received message from broker: ")
                     dump(msg)
