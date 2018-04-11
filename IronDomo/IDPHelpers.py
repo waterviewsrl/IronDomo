@@ -11,6 +11,7 @@ from random import randint
 import zmq
 
 from zmq.utils.monitor import recv_monitor_message
+from zmq.auth.thread import ThreadAuthenticator
 import logging
 import threading 
 
@@ -243,3 +244,41 @@ class Req(ZSocket):
         self.create(zmq.REQ)
 
         logging.warning('Req on "{}"'.format(self.connection_string))
+
+
+class CurveAuthenticator(object):
+    def __init__(self, ctx, domain='*', location=zmq.auth.CURVE_ALLOW_ANY, callback = None):
+        
+        self._domain = domain
+        self._location = location
+        self._callback = callback
+        self._ctx = ctx
+        self._atx = ThreadAuthenticator(self.ctx)
+        self._atx.start()
+        if (self._callback is not None):
+            logging.info('Callback: {0}'.format(self._callback))
+            self._atx.configure_curve_callback('*', credentials_provider=self._callback)
+        elif (self._location == zmq.auth.CURVE_ALLOW_ANY or self._location is None):
+            self._atx.configure_curve(domain='*', location=zmq.auth.CURVE_ALLOW_ANY)
+        else:
+            self.load_certs()
+        
+
+    @property
+    def atx(self):
+        return self._atx
+
+    @property
+    def location(self):
+        return self._location
+
+    @property
+    def domain(self):
+        return self._domain
+
+    @property
+    def ctx(self):
+        return self._ctx
+
+    def load_certs(self):
+        self.atx.configure_curve(domain=self._domain, location=self._location)

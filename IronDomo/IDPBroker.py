@@ -17,8 +17,8 @@ import zmq
 from IronDomo import IDP
 from IronDomo.IDPHelpers import dump
 from IronDomo.IDPHelpers import Router
+from IronDomo.IDPHelpers import CurveAuthenticator
 import zmq.auth
-from zmq.auth.thread import ThreadAuthenticator
 
 class Service(object):
     """a single Service"""
@@ -102,20 +102,9 @@ class IronDomoBroker(object):
         self.ctx = zmq.Context()
         self.socketclear = Router(clear_connection_string, self.ctx)
         self.socketcurve = Router(curve_connection_string, self.ctx, keys=self.credentials)
-        if (self.credentials is not None):
-            # Start an authenticator for this context.
-            self.auth = ThreadAuthenticator(self.ctx)
-            self.auth.start()
-            self.auth.allow('127.0.0.1')
-            # Tell authenticator to use the certificate in a directory
-            self.credentialsPath = credentialsPath
-            self.credentialsCallback = credentialsCallback
-            if (self.credentialsCallback is not None):
-                self.auth.configure_curve_callback('*', credentials_provider=self.credentialsCallback)
-            elif (self.credentialsPath is not None):
-                self.loadKeys()
-            else:
-                self.auth.configure_curve(domain='*', location=zmq.auth.CURVE_ALLOW_ANY)
+        self.credentialsPath = credentialsPath
+        self.credentialsCallback = credentialsCallback
+        self.auth = CurveAuthenticator(self.ctx, location=self.credentialsPath, callback=self.credentialsCallback)
         self.poller = zmq.Poller()
         self.poller.register(self.socketclear.socket, zmq.POLLIN)
         self.poller.register(self.socketcurve.socket, zmq.POLLIN)
