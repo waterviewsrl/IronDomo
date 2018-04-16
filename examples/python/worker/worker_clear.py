@@ -13,7 +13,9 @@ class Workload(object):
         self.pre = 'ECHOXXX'
 
     def do(self, request):
-        reply = [self.pre.encode() + request[0]] # Echo is complex... :-)
+        reply = [] 
+        for part in request:
+            reply.append(self.pre.encode() + b" " + part) # Echo is complex... :-)
         return reply
 
 def main():

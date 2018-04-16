@@ -10,7 +10,7 @@ def main():
     verbose = '-v' in sys.argv
     client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose)
     count = 0
-    while count < 10000:
+    while count < 100:
         request = "Hello world 1 -> {0}".format(count)
         try:
             reply = client.send(b"echo", request.encode())

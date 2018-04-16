@@ -56,7 +56,6 @@ class IronDomoWorker(object):
         reply = None
         while True:
             request = self.recv(reply)
-            #print('Request: {}'.format(request))
             if request is None:
                 break # Worker was interrupted
             reply = self.workload.do(request)
