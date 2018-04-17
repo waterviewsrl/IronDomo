@@ -16,13 +16,22 @@ int main (int argc, char *argv [])
     client->startClient();
 
     int count;
-    for (count = 0; count < 100000; count++) {
+    for (count = 0; count < 1000; count++) {
         std::vector<std::string> messageVec;
         messageVec.push_back("Hello world p1 ->" + std::to_string(count));
         messageVec.push_back("Hello world p2 ->" + std::to_string(count));
-        std::vector<std::string> res = client->send("echo", messageVec);
-        for (auto it=res.begin(); it!=res.end(); it++)
-            std::cout << *it << std::endl;
+        try
+        {
+            std::vector<std::string> res = client->send("echo", messageVec);
+            for (auto it=res.begin(); it!=res.end(); it++)
+                std::cout << *it << std::endl;
+        }
+        catch (std::exception &e)
+        {
+                std::cout << "Exception Caught: " << e.what() << std::endl;
+                break;
+        }
+
     }
     printf ("%d requests/replies processed\n", count);
 

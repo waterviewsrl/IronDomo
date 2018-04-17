@@ -11,15 +11,7 @@ import sys
 import logging
 import zmq.auth
 
-from sqlalchemy import cast, and_
-from sqlalchemy.dialects.postgresql import insert, JSONB
-from sqlalchemy.orm import contains_eager
-
-from waterviewDB import init_standalone_db
-
-
 from IronDomo import IDPBroker
-
 
 class Autorizer(object):
     db = None

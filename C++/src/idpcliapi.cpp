@@ -5,6 +5,14 @@
 
 #include "idpcliapi.h"
 
+class zmqInterruptedException: public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "ZeroMQ context was interrupted";
+  }
+} zmqInterrupted;
+
 IDP::IDPClient::IDPClient(const std::string &zmqHost, bool verbose, int timeout, int retries)
 {
     _zmqHost = zmqHost;
@@ -159,7 +167,11 @@ std::vector<std::string>  IDP::IDPClient::send(const std::string &service, const
         }
     }
     if (zctx_interrupted)
+    {
         printf ("W: interrupt received, killing client...\n");
+        throw zmqInterrupted;
+    }
+        
     zmsg_destroy (&request);
 
 
