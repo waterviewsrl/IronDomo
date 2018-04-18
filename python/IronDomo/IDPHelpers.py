@@ -167,7 +167,10 @@ class ZSocket:
     def event_monitor(self):
         while self._monitor.poll():
             evt = recv_monitor_message(self._monitor)
-            evt.update({'description': self._EVENT_MAP[evt['event']]})
+            try:
+                evt.update({'description': self._EVENT_MAP[evt['event']]})
+            except Exception as e:
+                evt.update({'description': 'Unknown Error'}) 
             logging.warning("Event Monitor(Host: {0}): {1}".format(self._connection_string, evt))
             if evt['event'] == zmq.EVENT_MONITOR_STOPPED:
                 break
