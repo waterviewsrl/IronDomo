@@ -10,8 +10,8 @@
 int main (int argc, char *argv [])
 {
     int verbose = (argc > 1 && streq (argv [1], "-v"));
-    IDP::IDPClient *client = new IDP::IDPClient("tcp://localhost:5556", verbose = false);
-    client->setupCurve("4BW)6Jg0+&}3Mwq*dJTMoG^rHbD#b!2SUmr7<H0#", "aS&Z4DU7#rpbsF+.r9Ek7%Id2FzftXA^egj+VWmp", "F{Wv%n^AuaF?KN&{HeybV]O>@m14&YH5[zMA]#WM");
+    IDP::IDPClient *client = new IDP::IDPClient("tcp://localhost:5556", verbose);
+    client->setupCurve("4BW)6Jg0+&}3Mwq*dJTMoG^rHbD#b!2SUmr7<H0#", "aS&Z4DU7#rpbsF+.r9Ek7%Id2FzftXA^egj+VWmp", "P+S690P{iVPfx<aFJwxfSY^ugFzjuWOnaIh!o7J<");
 
     client->startClient();
 

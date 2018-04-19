@@ -15,6 +15,22 @@
 
 namespace IDP
 {
+class zmqInterruptedException: public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "ZeroMQ context was interrupted";
+  }
+};
+
+class sendFailedException: public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "Request Failed";
+  }
+};
+
 class IDPClient
 {
   public:
