@@ -114,8 +114,8 @@ class IronDomoBroker(object):
     def route(self, socket, clear = None):
        msg = socket.recv()
        sender = msg.pop(0)
-       logging.info("I: received message from: {0}".format(sender))
        if self.verbose:
+           logging.info("I: received message from: {0}".format(sender))
            dump(msg)
 
        empty = msg.pop(0)
@@ -153,6 +153,7 @@ class IronDomoBroker(object):
 
     def process_client(self, sender, msg, clear = None):
         """Process a request coming from a client."""
+        logging.info("I: received message fromi client: {0}".format(sender))
         assert len(msg) >= 2 # Service name + body
         service = msg.pop(0)
         # Set reply return address to client sender
