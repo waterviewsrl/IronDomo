@@ -113,11 +113,11 @@ class IronDomoBroker(object):
 
     def route(self, socket, clear = None):
        msg = socket.recv()
+       sender = msg.pop(0)
+       logging.info("I: received message from: {0}".format(sender))
        if self.verbose:
-           logging.info("I: received message:")
            dump(msg)
 
-       sender = msg.pop(0)
        empty = msg.pop(0)
        assert empty == b''
        header = msg.pop(0)
