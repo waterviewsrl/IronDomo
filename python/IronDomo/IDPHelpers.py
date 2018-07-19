@@ -240,11 +240,14 @@ class Router(ZSocket):
         logging.warning('Router on "{}"'.format(self.connection_string))
 
 class Req(ZSocket):
-    def __init__(self, connection_string, ctx=None, keys=None, server_key=None):
+    def __init__(self, connection_string, ctx=None, keys=None, server_key=None, identity=None):
 
         super().__init__(connection_string=connection_string , ctx=ctx, keys=keys, server_key=server_key)
 
         self.create(zmq.REQ)
+
+        if identity is not None:
+           self.socket.setsockopt(zmq.IDENTITY, identity.encode())
 
         logging.warning('Req on "{}"'.format(self.connection_string))
 

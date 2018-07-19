@@ -24,9 +24,11 @@ class IronDomoClient(object):
     verbose = True 
     credentials = None
 
-    def __init__(self, broker, verbose=False, credentials=None):
+    def __init__(self, broker, verbose=False, credentials=None, identity=None):
+        self.conncnt = 0
         self.broker = broker
         self.verbose = verbose
+        self.identity = identity
         self.ctx = zmq.Context()
         self.poller = zmq.Poller()
         self.credentials = credentials
@@ -40,7 +42,8 @@ class IronDomoClient(object):
         if self.client:
             self.poller.unregister(self.client.socket)
             self.client.close()
-        self.client = Req(self.broker, ctx=self.ctx) 
+        self.client = Req(self.broker, ctx=self.ctx, identity="{0}_{1}".format(self.identity, self.conncnt))
+        self.conncnt = self.conncnt + 1 
         if (self.credentials is not None):
             self.client.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
         self.client.connect()

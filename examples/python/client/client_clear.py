@@ -8,7 +8,7 @@ from IronDomo  import IDPClient
 
 def main():
     verbose = '-v' in sys.argv
-    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose)
+    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity='Pippo')
     count = 0
     while count < 100:
         request = "Hello world 1 -> {0}".format(count)
