@@ -5,12 +5,14 @@ Author: Matteo Ferrabone <matteo.ferrabone@gmail.com>
 import os
 import sys
 from IronDomo  import IDPClient
+import time
 
 def main():
     verbose = '-v' in sys.argv
     client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity='Pippo')
     count = 0
     while count < 100:
+        time.sleep(1)
         request = "Hello world 1 -> {0}".format(count)
         try:
             reply = client.send(b"echo", request.encode())

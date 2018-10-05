@@ -6,6 +6,7 @@ Author: Matteo Ferrabone <matteo.ferrabone@gmail.com>
 import logging
 import time
 import zmq
+import random
 
 from IronDomo.IDPHelpers import dump
 from IronDomo.IDPHelpers import Dealer
@@ -39,9 +40,13 @@ class IronDomoWorker(object):
     reply_to_clear = None
     reply_to_curve = None
 
-    def __init__(self, broker, service, verbose=False, credentials=None, workload = None):
+    def __init__(self, broker, service, verbose=False, credentials=None, workload = None, idle_timeout = None, unique=False):
+        self.alive = True
+        self.last_message = time.time() 
         self.broker = broker
         self.service = service
+        self.unique = unique
+        self.identity = '{0}_{1}'.format(self.service.decode(), 0 if unique else random.randint(0, 100))
         self.verbose = verbose
         self.ctx = zmq.Context()
         self.poller = zmq.Poller()
@@ -49,6 +54,7 @@ class IronDomoWorker(object):
                 level=logging.INFO)
         self.credentials = credentials
         self.workload = workload
+        self.idle_timeout = idle_timeout
         self.reconnect_to_broker()
 
 
@@ -60,13 +66,14 @@ class IronDomoWorker(object):
                 break # Worker was interrupted
             reply = self.workload.do(request)
 
+        logging.warning('Exiting service: {0}'.format(self.service))
 
     def reconnect_to_broker(self):
         """Connect or reconnect to broker"""
         if self.worker:
             self.poller.unregister(self.worker.socket)
             self.worker.close()
-        self.worker = Dealer(self.broker, ctx=self.ctx)
+        self.worker = Dealer(self.broker, ctx=self.ctx, identity=self.identity)
         if (self.credentials is not None):
             self.worker.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
         self.worker.connect()
@@ -81,6 +88,7 @@ class IronDomoWorker(object):
         # If liveness hits zero, queue is considered disconnected
         self.liveness = self.HEARTBEAT_LIVENESS
         self.heartbeat_at = time.time() + 1e-3 * self.heartbeat
+        self.last_message = time.time()
 
 
     def send_to_broker(self, command, option=None, msg=None):
@@ -151,7 +159,9 @@ class IronDomoWorker(object):
                     # pop empty
                     empty = msg.pop(0)
                     assert empty == b''
-
+                    
+                    self.last_message = time.time()
+                    
                     return msg # We have a request to process
                 elif command == IDP.W_REQUEST_CURVE:
                     # We should pop and save as many addresses as there are
@@ -162,8 +172,11 @@ class IronDomoWorker(object):
                     empty = msg.pop(0)
                     assert empty == b''
 
+                    self.last_message = time.time()
+
                     return msg # We have a request to process
                 elif command == IDP.W_HEARTBEAT:
+                    logging.info('Received W_HEARTBEAT: {0}'.format(self.service))
                     # Do nothing for heartbeats
                     pass
                 elif command == IDP.W_DISCONNECT:
@@ -182,6 +195,13 @@ class IronDomoWorker(object):
                     except KeyboardInterrupt:
                         break
                     self.reconnect_to_broker()
+
+            if self.idle_timeout:
+                now = time.time()
+                if now - self.last_message >= self.idle_timeout:
+                    self.alive = False
+                    logging.warning('Worker has been idle for too much time')
+                    break
 
             # Send HEARTBEAT if it's time
             if time.time() > self.heartbeat_at:

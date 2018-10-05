@@ -222,11 +222,14 @@ class ZSocket:
 
 
 class Dealer(ZSocket):
-    def __init__(self, connection_string, ctx=None, keys=None, server_key=None):
+    def __init__(self, connection_string, ctx=None, keys=None, server_key=None, identity=None):
 
         super().__init__(connection_string=connection_string , ctx=ctx, keys=keys, server_key=server_key)
 
         self.create(zmq.DEALER)
+        
+        if identity is not None:
+           self.socket.setsockopt(zmq.IDENTITY, identity.encode())
 
         logging.warning('Dealer on "{}"'.format(self.connection_string))
 

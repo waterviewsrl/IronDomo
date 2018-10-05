@@ -20,6 +20,8 @@ from IronDomo.IDPHelpers import Router
 from IronDomo.IDPHelpers import CurveAuthenticator
 import zmq.auth
 
+import json
+
 class Service(object):
     """a single Service"""
     name = None # Service name
@@ -277,6 +279,13 @@ class IronDomoBroker(object):
         if b"mmi.service" == service:
             name = msg[-1]
             returncode = b"200" if name in self.services else b"404"
+        if b"mmi.services" == service:
+            name = msg[-1]
+            sl = []
+            for serv in self.services:
+                sl.append(serv.decode())
+            returncode = json.dumps({'services': sl}).encode()
+            logging.warning('mmi.services : {0}'.format(returncode)) 
         msg[-1] = returncode
 
         # insert the protocol header and service name after the routing envelope ([client, ''])
@@ -290,7 +299,7 @@ class IronDomoBroker(object):
             if((self.credentialsPath is not None) and (self.credentialsCallback is None)):
                self.loadKeys()
             for worker in self.waiting:
-                logging.warning('Heart: {0}'.format(worker.identity))
+                logging.warning('Heart: {0} -> {1} '.format(worker.identity, worker.service.name))
                 self.send_to_worker(worker, IDP.W_HEARTBEAT, None, None)
 
             self.heartbeat_at = time.time() + 1e-3*self.HEARTBEAT_INTERVAL
@@ -300,15 +309,24 @@ class IronDomoBroker(object):
 
         Workers are oldest to most recent, so we stop at the first alive worker.
         """
-        while self.waiting:
-            w = self.waiting[0]
-            if w.expiry < time.time():
-                logging.warning("I: deleting expired worker: %s", w.identity)
-                self.delete_worker(w,False)
-                self.waiting.pop(0)
-            else:
-                break
 
+        deletable = 0
+
+        while deletable != None:
+            deletable = None
+            now = time.time()
+            for i in range (len(self.waiting)):    
+                if self.waiting[i].expiry < now:
+                    deletable = i
+                    break
+
+            if deletable != None:
+                logging.warning("I: deleting expired worker: %s", self.waiting[deletable].identity)
+                #del self.waiting[deletable]     
+                self.delete_worker(self.waiting[deletable],False)
+                self.waiting.pop(deletable)
+
+        
     def worker_waiting(self, worker):
         """This worker is now waiting for work."""
         # Queue to broker and service waiting lists

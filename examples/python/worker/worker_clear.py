@@ -21,7 +21,7 @@ class Workload(object):
 def main():
     verbose = '-v' in sys.argv
     workload = Workload()
-    worker = IDPWorker.IronDomoWorker("tcp://localhost:5555", b"echo", verbose, workload= workload)
+    worker = IDPWorker.IronDomoWorker("tcp://localhost:5555", b"echo", verbose, workload= workload, idle_timeout=10)
 
     worker.loop()
 
