@@ -100,6 +100,7 @@ class IronDomoBroker(object):
         self.services = {}
         self.workers = {}
         self.waiting = []
+        self.busy = []
         self.heartbeat_at = time.time() + 1e-3*self.HEARTBEAT_INTERVAL
         self.ctx = zmq.Context()
         self.socketclear = Router(clear_connection_string, self.ctx)
@@ -162,9 +163,11 @@ class IronDomoBroker(object):
         msg = [sender, b''] + msg
         if service.startswith(self.INTERNAL_SERVICE_PREFIX):
             logging.warning('self.INTERNAL_SERVICE_PREFIX')
-            self.service_internal(service, msg)
+            self.service_internal(service, msg, clear)
         else:
-            self.dispatch(self.require_service(service), msg, clear)
+            srvc = self.lookup_service(service) 
+            if srvc != None:
+                self.dispatch(srvc, msg, clear)
 
     def process_worker(self, sender, msg, clear):
         """Process message sent to us by a worker."""
@@ -237,9 +240,14 @@ class IronDomoBroker(object):
         if disconnect:
             self.send_to_worker(worker, IDP.W_DISCONNECT, None, None)
 
-        if worker.service is not None:
+        if worker.service is not None and worker in worker.service.waiting:
             worker.service.waiting.remove(worker)
-        self.workers.pop(worker.identity)
+            if len(worker.service.waiting) == 0:
+                name = worker.service.name
+                self.services.pop(name)
+                worker.service = None
+        if worker.identity in self.workers: 
+            self.workers.pop(worker.identity)
 
     def require_worker(self, address, clear):
         """Finds the worker (creates if necessary)."""
@@ -254,11 +262,20 @@ class IronDomoBroker(object):
 
         return worker
 
+    def lookup_service(self, name):
+        """Locates the service (creates if necessary)."""
+        assert (name is not None)
+        service = self.services.get(name, None)
+
+        return service
+
     def require_service(self, name):
         """Locates the service (creates if necessary)."""
+        logging.warning('Requiring  Service: {0}'.format(name))
         assert (name is not None)
         service = self.services.get(name)
         if (service is None):
+            logging.warning('Requiring NEW Service: {0}'.format(name))
             service = Service(name)
             self.services[name] = service
 
@@ -273,7 +290,7 @@ class IronDomoBroker(object):
         self.socketcurve.bind()
         logging.info("I: IDP broker/0.1.1 is active at {0} / {1}".format(self.socketclear.connection_string, self.socketcurve.connection_string))
 
-    def service_internal(self, service, msg):
+    def service_internal(self, service, msg, clear):
         """Handle internal service according to 8/MMI specification"""
         returncode = b"501"
         if b"mmi.service" == service:
@@ -286,11 +303,25 @@ class IronDomoBroker(object):
                 sl.append(serv.decode())
             returncode = json.dumps({'services': sl}).encode()
             logging.warning('mmi.services : {0}'.format(returncode)) 
+        if b"mmi.workers" == service:
+            name = msg[-1]
+            wl = []
+            for w in self.workers:
+                wl.append(w.decode())
+            returncode = json.dumps({'workers': wl}).encode()
+            logging.warning('mmi.services : {0}'.format(returncode)) 
         msg[-1] = returncode
 
         # insert the protocol header and service name after the routing envelope ([client, ''])
         msg = msg[:2] + [IDP.C_CLIENT, service] + msg[2:]
-        self.socketclear.send(msg)
+
+        if self.verbose:
+            logging.info("I: sending MMI reply")
+            dump(msg)
+        if clear:
+            self.socketclear.send(msg)
+        else:
+            self.socketcurve.send(msg)
 
     def send_heartbeats(self):
         """Send heartbeats to idle workers if it's time"""

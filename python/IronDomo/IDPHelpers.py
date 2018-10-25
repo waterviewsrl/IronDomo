@@ -90,11 +90,15 @@ class ZSocket:
             self._socket.disable_monitor()
 
     def close(self):
-        logging.info('Socket closing')
+        logging.warning('Disabling Monitor')
+        self._monitor_active = False
         self._socket.disable_monitor()
         self._monitor_thread.join()
         self._socket.close()
         self._socket = None
+        
+        logging.warning('Closing Monitor')
+
         if(self._own):
             self._ctx.term()
             self._ctx = None
@@ -161,19 +165,25 @@ class ZSocket:
         self._socket.linger = 1
         self._attach_curve_keys()
         self._monitor = self._socket.get_monitor_socket()
+        self._monitor_poller =  zmq.Poller()
+        self._monitor_poller.register(self._monitor, zmq.POLLIN)
+
         self._monitor_thread = threading.Thread(target=self.event_monitor, daemon=True)
+        self._monitor_active = True
         self._monitor_thread.start()
 
     def event_monitor(self):
-        while self._monitor.poll():
-            evt = recv_monitor_message(self._monitor)
-            try:
-                evt.update({'description': self._EVENT_MAP[evt['event']]})
-            except Exception as e:
-                evt.update({'description': 'Unknown Error'}) 
-            logging.warning("Event Monitor(Host: {0}): {1}".format(self._connection_string, evt))
-            if evt['event'] == zmq.EVENT_MONITOR_STOPPED:
-                break
+        while self._monitor_active:
+            socks = dict(self._monitor_poller.poll(timeout=100))
+            if self._monitor in socks and socks[self._monitor] == zmq.POLLIN: 
+                evt = recv_monitor_message(self._monitor)
+                try:
+                    evt.update({'description': self._EVENT_MAP[evt['event']]})
+                except Exception as e:
+                    evt.update({'description': 'Unknown Error'}) 
+                logging.warning("Event Monitor(Host: {0}): {1}".format(self._connection_string, evt))
+                if evt['event'] == zmq.EVENT_MONITOR_STOPPED:
+                    break
         self._monitor.close()
         logging.warning("Event Monitor thread done!")
 

@@ -66,6 +66,8 @@ class IronDomoWorker(object):
                 break # Worker was interrupted
             reply = self.workload.do(request)
 
+        self.worker.close()
+
         logging.warning('Exiting service: {0}'.format(self.service))
 
     def reconnect_to_broker(self):
@@ -77,7 +79,7 @@ class IronDomoWorker(object):
         if (self.credentials is not None):
             self.worker.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
         self.worker.connect()
-        logging.info("I: After CONNECT ({0})".format(self.credentials))
+        logging.warning("I: After CONNECT ({0})".format(self.credentials))
         self.poller.register(self.worker.socket, zmq.POLLIN)
         if self.verbose:
             logging.info("I: connecting to broker at %s...", self.broker)
@@ -89,7 +91,6 @@ class IronDomoWorker(object):
         self.liveness = self.HEARTBEAT_LIVENESS
         self.heartbeat_at = time.time() + 1e-3 * self.heartbeat
         self.last_message = time.time()
-
 
     def send_to_broker(self, command, option=None, msg=None):
         """Send message to broker.
