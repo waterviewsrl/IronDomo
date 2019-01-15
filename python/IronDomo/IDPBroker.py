@@ -106,9 +106,9 @@ class IronDomoBroker(object):
         self.socketclear = Router(clear_connection_string, self.ctx)
         self.socketcurve = Router(curve_connection_string, self.ctx, keys=self.credentials)
         self.socketclear._socket.setsockopt(zmq.ROUTER_HANDOVER, 1)
-        self.socketclear._socket.socketcurve(zmq.ROUTER_HANDOVER, 1)
+        self.socketcurve._socket.setsockopt(zmq.ROUTER_HANDOVER, 1)
         self.socketclear._socket.setsockopt(zmq.ROUTER_MANDATORY, 1)
-        self.socketclear._socket.socketcurve(zmq.ROUTER_MANDATORY, 1)
+        self.socketcurve._socket.setsockopt(zmq.ROUTER_MANDATORY, 1)
         self.credentialsPath = credentialsPath
         self.credentialsCallback = credentialsCallback
         self.auth = CurveAuthenticator(self.ctx, location=self.credentialsPath, callback=self.credentialsCallback)
