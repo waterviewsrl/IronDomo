@@ -105,10 +105,10 @@ class IronDomoBroker(object):
         self.ctx = zmq.Context()
         self.socketclear = Router(clear_connection_string, self.ctx)
         self.socketcurve = Router(curve_connection_string, self.ctx, keys=self.credentials)
-        self.socketclear._socket.setsockopt(zmq.ZMQ_ROUTER_HANDOVER, 1)
-        self.socketclear._socket.socketcurve(zmq.ZMQ_ROUTER_HANDOVER, 1)
-        self.socketclear._socket.setsockopt(zmq.ZMQ_ROUTER_MANDATORY, 1)
-        self.socketclear._socket.socketcurve(zmq.ZMQ_ROUTER_MANDATORY, 1)
+        #self.socketclear._socket.setsockopt(zmq.ZMQ_ROUTER_HANDOVER, 1)
+        #self.socketclear._socket.socketcurve(zmq.ZMQ_ROUTER_HANDOVER, 1)
+        #self.socketclear._socket.setsockopt(zmq.ZMQ_ROUTER_MANDATORY, 1)
+        #self.socketclear._socket.socketcurve(zmq.ZMQ_ROUTER_MANDATORY, 1)
         self.credentialsPath = credentialsPath
         self.credentialsCallback = credentialsCallback
         self.auth = CurveAuthenticator(self.ctx, location=self.credentialsPath, callback=self.credentialsCallback)
