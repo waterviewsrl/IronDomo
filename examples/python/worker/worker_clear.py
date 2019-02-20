@@ -4,7 +4,9 @@ Author: Matteo Ferrabone <matteo.ferrabone@gmail.com>
 """
 
 import sys
+import time
 from IronDomo import IDPWorker
+import logging
 
 class Workload(object):
     pre = None
@@ -13,6 +15,8 @@ class Workload(object):
         self.pre = 'ECHOXXX'
 
     def do(self, request):
+        logging.warning('Sleepo')
+        time.sleep(1)
         reply = [] 
         for part in request:
             reply.append(self.pre.encode() + b" " + part) # Echo is complex... :-)
@@ -21,7 +25,7 @@ class Workload(object):
 def main():
     verbose = '-v' in sys.argv
     workload = Workload()
-    worker = IDPWorker.IronDomoWorker("tcp://localhost:5555", b"echo", verbose, workload= workload, idle_timeout=10)
+    worker = IDPWorker.IronDomoWorker("tcp://localhost:5555", b"echo", verbose, workload= workload)
 
     worker.loop()
 

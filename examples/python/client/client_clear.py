@@ -14,6 +14,7 @@ def main():
     while count < 100:
         time.sleep(1)
         request = "Hello world 1 -> {0}".format(count)
+        print(request)
         try:
             reply = client.send(b"echo", request.encode())
             print(reply)
