@@ -47,7 +47,7 @@ class IronDomoWorker(object):
         self.broker = broker
         self.service = service
         self.unique = unique
-        self.identity = '{0}_{1}'.format(self.service.decode(), 0 if unique else b64encode(os.urandom(3)))
+        self.identity = '{0}_{1}'.format(self.service.decode(), 0 if unique else b64encode(os.urandom(3)).decode())
         self.verbose = verbose
         self.ctx = zmq.Context()
         self.poller = zmq.Poller()
@@ -57,6 +57,7 @@ class IronDomoWorker(object):
         self.workload = workload
         self.idle_timeout = idle_timeout
         self.reconnect_to_broker()
+        logging.warning("COSOOO: {0}".format(self.identity))
 
 
     def loop(self):

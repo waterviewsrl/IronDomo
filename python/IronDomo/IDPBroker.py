@@ -179,7 +179,7 @@ class IronDomoBroker(object):
 
         command = msg.pop(0)
 
-        worker_ready = hexlify(sender) in self.workers
+        worker_ready = sender in self.workers
 
         worker = self.require_worker(sender, clear)
 
@@ -256,7 +256,7 @@ class IronDomoBroker(object):
     def require_worker(self, address, clear):
         """Finds the worker (creates if necessary)."""
         assert (address is not None)
-        identity = hexlify(address)
+        identity = address#hexlify(address)
         worker = self.workers.get(identity)
         if (worker is None):
             worker = Worker(identity, address, self.HEARTBEAT_EXPIRY, clear)
@@ -334,7 +334,7 @@ class IronDomoBroker(object):
             if((self.credentialsPath is not None) and (self.credentialsCallback is None)):
                self.loadKeys()
             for worker in self.waiting:
-                logging.warning('Heart: {0} -> {1} '.format(worker.identity.decode(), worker.service.name))
+                logging.warning('Heart: {0} -> {1} '.format(worker.identity, worker.service.name))
                 self.send_to_worker(worker, IDP.W_HEARTBEAT, None, None)
 
             self.heartbeat_at = time.time() + 1e-3*self.HEARTBEAT_INTERVAL
