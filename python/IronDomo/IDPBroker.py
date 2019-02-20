@@ -277,7 +277,7 @@ class IronDomoBroker(object):
         """Locates the service (creates if necessary)."""
         logging.warning('Requiring  Service: {0}'.format(name))
         assert (name is not None)
-        service = self.services.get(name)
+        service = self.services.get(name, None)
         if (service is None):
             logging.warning('Requiring NEW Service: {0}'.format(name))
             service = Service(name)
@@ -334,7 +334,7 @@ class IronDomoBroker(object):
             if((self.credentialsPath is not None) and (self.credentialsCallback is None)):
                self.loadKeys()
             for worker in self.waiting:
-                logging.warning('Heart: {0} -> {1} '.format(worker.identity, worker.service.name))
+                logging.warning('Heart: {0} -> {1} '.format(worker.identity.decode(), worker.service.name))
                 self.send_to_worker(worker, IDP.W_HEARTBEAT, None, None)
 
             self.heartbeat_at = time.time() + 1e-3*self.HEARTBEAT_INTERVAL
