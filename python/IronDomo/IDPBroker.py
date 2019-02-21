@@ -58,7 +58,7 @@ class IronDomoBroker(object):
 
     # We'd normally pull these from config data
     INTERNAL_SERVICE_PREFIX = b"mmi."
-    HEARTBEAT_LIVENESS = 3 # 3-5 is reasonable
+    HEARTBEAT_LIVENESS = 5 # 3-5 is reasonable
     HEARTBEAT_INTERVAL = 2500 # msecs
     HEARTBEAT_EXPIRY = HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
 
