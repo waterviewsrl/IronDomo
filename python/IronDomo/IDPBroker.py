@@ -242,6 +242,7 @@ class IronDomoBroker(object):
         """Deletes worker from all data structures, and deletes worker."""
         assert worker is not None
         if disconnect:
+            logging.warning('Sending disconnect: {0}'.format(worker.identity))
             self.send_to_worker(worker, IDP.W_DISCONNECT, None, None)
 
         if worker.service is not None and worker in worker.service.waiting:
@@ -262,7 +263,7 @@ class IronDomoBroker(object):
             worker = Worker(identity, address, self.HEARTBEAT_EXPIRY, clear)
             self.workers[identity] = worker
             if self.verbose:
-                logging.info("I: registering new worker: %s", identity)
+                logging.warning("I: registering new worker: %s", identity)
 
         return worker
 

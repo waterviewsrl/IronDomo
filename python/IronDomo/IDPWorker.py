@@ -183,6 +183,7 @@ class IronDomoWorker(object):
                     # Do nothing for heartbeats
                     pass
                 elif command == IDP.W_DISCONNECT:
+                    logging.waening('Received W_DISCONNECT!')
                     self.reconnect_to_broker()
                 else :
                     logging.error("E: invalid input message: ")
