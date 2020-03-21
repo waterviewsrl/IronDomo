@@ -15,21 +15,22 @@ from IronDomo.IDPHelpers import Req
 class IronDomoClient(object):
     """Irondomo Protocol Client API, Python version.
     """
-    broker = None
-    ctx = None
-    client = None
+    #broker = None
+    #ctx = None
+    #client = None
     poller = None
     timeout = 2500
     retries = 3
     verbose = True 
     credentials = None
 
-    def __init__(self, broker, verbose=False, credentials=None, identity=None):
+    def __init__(self, broker, verbose=False, credentials=None, identity=None, ctx=None):
+        self.client = None
         self.conncnt = 0
         self.broker = broker
         self.verbose = verbose
         self.identity = identity
-        self.ctx = zmq.Context()
+        self.ctx = zmq.Context() if ctx == None else ctx
         self.poller = zmq.Poller()
         self.credentials = credentials
         logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",

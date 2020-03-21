@@ -6,17 +6,19 @@ import os
 import sys
 from IronDomo  import IDPClient
 import time
+import begin
 
-def main():
+@begin.start
+def main(service='echo', identity='echo'):
     verbose = '-v' in sys.argv
-    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity='Pippo')
+    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity=identity)
     count = 0
-    while count < 100:
+    while True:
         time.sleep(1)
-        request = "Hello world 1 -> {0}".format(count)
+        request = "Hello world {0} -> {1}".format(service, count)
         print(request)
         try:
-            reply = client.send(b"echo", request.encode())
+            reply = client.send(service.encode(), [request.encode(), b'parte2'])
             print(reply)
         except KeyboardInterrupt:
             break
@@ -27,6 +29,4 @@ def main():
         count += 1
     print("%i requests/replies processed" % count)
 
-if __name__ == '__main__':
-    main()
 

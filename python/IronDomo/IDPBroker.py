@@ -16,7 +16,7 @@ import zmq
 # local
 from IronDomo import IDP
 from IronDomo.IDPHelpers import dump
-from IronDomo.IDPHelpers import Router
+from IronDomo.IDPHelpers import Router, Publisher
 from IronDomo.IDPHelpers import CurveAuthenticator
 import zmq.auth
 
@@ -91,7 +91,7 @@ class IronDomoBroker(object):
             self.auth.configure_curve(domain='*', location=self.credentialsPath)
 
 
-    def __init__(self, clear_connection_string, curve_connection_string, verbose=False, credentials=None, credentialsPath=None, credentialsCallback=None):
+    def __init__(self, clear_connection_string, curve_connection_string, publisher_connection_string=None, verbose=False, credentials=None, credentialsPath=None, credentialsCallback=None):
         """Initialize broker state."""
         self.verbose = verbose
         logging.basicConfig(format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
@@ -105,6 +105,7 @@ class IronDomoBroker(object):
         self.ctx = zmq.Context()
         self.socketclear = Router(clear_connection_string, self.ctx)
         self.socketcurve = Router(curve_connection_string, self.ctx, keys=self.credentials)
+        self.socketpublisher = None if publisher_connection_string == None else Publisher(publisher_connection_string, self.ctx)
         self.socketclear._socket.setsockopt(zmq.ROUTER_HANDOVER, 1)
         self.socketcurve._socket.setsockopt(zmq.ROUTER_HANDOVER, 1)
         #self.socketclear._socket.setsockopt(zmq.ROUTER_MANDATORY, 1)
@@ -172,6 +173,8 @@ class IronDomoBroker(object):
             srvc = self.lookup_service(service) 
             if srvc != None:
                 self.dispatch(srvc, msg, clear)
+            if self.socketpublisher != None:
+                self.socketpublisher.publish(service, msg)
 
     def process_worker(self, sender, msg, clear):
         """Process message sent to us by a worker."""
@@ -293,7 +296,9 @@ class IronDomoBroker(object):
         """
         self.socketclear.bind()
         self.socketcurve.bind()
-        logging.info("I: IDP broker/0.1.1 is active at {0} / {1}".format(self.socketclear.connection_string, self.socketcurve.connection_string))
+        if self.socketpublisher != None:
+            self.socketpublisher.bind()
+            logging.info("I: IDP broker/0.1.1 is active at {0} / {1}".format(self.socketclear.connection_string, self.socketcurve.connection_string))
 
     def service_internal(self, service, msg, clear):
         """Handle internal service according to 8/MMI specification"""

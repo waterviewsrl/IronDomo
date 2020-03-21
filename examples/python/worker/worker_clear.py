@@ -7,6 +7,7 @@ import sys
 import time
 from IronDomo import IDPWorker
 import logging
+import begin
 
 class Workload(object):
     pre = None
@@ -15,20 +16,18 @@ class Workload(object):
         self.pre = 'ECHOXXX'
 
     def do(self, request):
-        logging.warning('Sleepo')
-        time.sleep(1)
+        logging.warning('Sleepo: {0}'.format(request))
+        #time.sleep(1)
         reply = [] 
         for part in request:
-            reply.append(self.pre.encode() + b" " + part) # Echo is complex... :-)
+            reply.append(part) # Echo is complex... :-)
         return reply
 
-def main():
+@begin.start
+def main(clear_url='tcp://localhost:5555', service='echo'):
     verbose = '-v' in sys.argv
     workload = Workload()
-    worker = IDPWorker.IronDomoWorker("tcp://localhost:5555", b"echo", verbose, workload= workload)
+    worker = IDPWorker.IronDomoWorker(clear_url, service.encode(), verbose, workload= workload)
 
     worker.loop()
 
-
-if __name__ == '__main__':
-    main()

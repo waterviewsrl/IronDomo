@@ -113,6 +113,7 @@ class ZSocket:
 
     @curve_keys.setter
     def curve_keys(self, keys):
+        logging.warning('KEYS: {0}'.format(keys))
         if keys is not None:
             public, secret = keys
             if isinstance(public, str):
@@ -205,10 +206,16 @@ class ZSocket:
         logging.info('publish: {0}'.format(channel, data))
         if not isinstance(key, bytes):
             key = key.encode('utf-8')
-        if not isinstance(message, bytes):
-            message = message.encode('utf-8')
+        #if not isinstance(message, bytes):
+        #    message = message.encode('utf-8')
 
-        self.socket.send_multipart([key, message])
+        self.socket.send_multipart([key]+message)
+
+    def subscribe(self, channel):
+         self.socket.setsockopt(zmq.SUBSCRIBE, channel.encode())
+
+    def unsubscribe(self, channel):
+         self.socket.setsockopt(zmq.UNSUBSCRIBE, channel.encode())
 
     def send(self, data):
         self.socket.send_multipart(data)
@@ -264,6 +271,23 @@ class Req(ZSocket):
 
         logging.warning('Req on "{}"'.format(self.connection_string))
 
+class Publisher(ZSocket):
+    def __init__(self, connection_string, ctx=None, keys=None, server_key=None):
+
+        super().__init__(connection_string=connection_string, ctx=ctx, keys=keys, server_key=server_key)
+
+        self.create(zmq.PUB)
+
+        logging.warning('Publisher on "{}"'.format(self.connection_string))
+
+class Subscriber(ZSocket):
+    def __init__(self, connection_string, ctx=None, keys=None, server_key=None):
+
+        super().__init__(connection_string=connection_string, ctx=ctx, keys=keys, server_key=server_key)
+
+        self.create(zmq.SUB)
+
+        logging.warning('Subscriber on "{}"'.format(self.connection_string))
 
 class CurveAuthenticator(object):
     def __init__(self, ctx, domain='*', location=zmq.auth.CURVE_ALLOW_ANY, callback = None):
