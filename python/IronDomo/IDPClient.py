@@ -18,13 +18,14 @@ class IronDomoClient(object):
     #broker = None
     #ctx = None
     #client = None
-    poller = None
-    timeout = 2500
+    #poller = None
+    #timeout = 2500
     retries = 3
     verbose = True 
     credentials = None
 
-    def __init__(self, broker, verbose=False, credentials=None, identity=None, ctx=None):
+    def __init__(self, broker, verbose=False, credentials=None, identity=None, ctx=None, timeout = 2500):
+        self.timeout = timeout
         self.client = None
         self.conncnt = 0
         self.broker = broker
