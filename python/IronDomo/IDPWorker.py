@@ -27,7 +27,7 @@ class IronDomoWorker(object):
     heartbeat_at = 0 # When to send HEARTBEAT (relative to time.time(), so in seconds)
     liveness = 0 # How many attempts left
     heartbeat = 2500 # Heartbeat delay, msecs
-    reconnect = 2500 # Reconnect delay, msecs
+    reconnect = 10000 # Reconnect delay, msecs
 
     # Internal state
     expect_reply = False # False only at start
@@ -57,7 +57,7 @@ class IronDomoWorker(object):
         self.workload = workload
         self.idle_timeout = idle_timeout
         self.reconnect_to_broker()
-        logging.warning("COSOOO: {0}".format(self.identity))
+        logging.info("Loggin: {0}".format(self.identity))
 
 
     def loop(self):
@@ -78,6 +78,8 @@ class IronDomoWorker(object):
             self.poller.unregister(self.worker.socket)
             self.worker.close()
         self.worker = Dealer(self.broker, ctx=self.ctx, identity=self.identity)
+        self.worker._socket.setsockopt(zmq.RECONNECT_IVL, 250)
+        self.worker._socket.setsockopt(zmq.RECONNECT_IVL_MAX, 2500)
         if (self.credentials is not None):
             self.worker.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
         self.worker.connect()
@@ -192,9 +194,12 @@ class IronDomoWorker(object):
             else:
                 self.liveness -= 1
                 if self.liveness == 0:
-                    if self.verbose:
-                        logging.warn("W: disconnected from broker - retrying...")
+                    logging.warn("Disconnected from broker - retrying...")
                     try:
+                        if self.worker:
+                            self.poller.unregister(self.worker.socket)
+                            self.worker.close()
+                            self.worker = None
                         time.sleep(1e-3*self.reconnect)
                     except KeyboardInterrupt:
                         break

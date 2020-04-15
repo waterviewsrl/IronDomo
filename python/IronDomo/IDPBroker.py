@@ -138,20 +138,23 @@ class IronDomoBroker(object):
            logging.error("E: invalid message:")
            dump(msg)
 
-
     def mediate(self):
         """Main broker work happens here"""
         while True:
             try:
-                socks = dict(self.poller.poll(self.HEARTBEAT_INTERVAL))
-            except KeyboardInterrupt:
-                break # Interrupted
-            if (self.socketclear.socket in socks):
-                self.route(self.socketclear, True)
-            elif (self.socketcurve.socket in socks):
-                self.route(self.socketcurve, False)
-            self.purge_workers()
-            self.send_heartbeats()
+                try:
+                    socks = dict(self.poller.poll(self.HEARTBEAT_INTERVAL))
+                except KeyboardInterrupt:
+                    break # Interrupted
+                if (self.socketclear.socket in socks):
+                    self.route(self.socketclear, True)
+                elif (self.socketcurve.socket in socks):
+                    self.route(self.socketcurve, False)
+                self.purge_workers()
+                self.send_heartbeats()
+            except Exception as e:
+                logging.error('Broker Error: {0}'.format(e))
+                break
 
     def destroy(self):
         """Disconnect all workers, destroy context."""
@@ -225,6 +228,7 @@ class IronDomoBroker(object):
                 # Attach worker to service and mark as idle
                 logging.warning('Attaching: {0}'.format(worker.identity))
                 worker.service = self.require_service(service)
+                logging.warning('worker.service: {0}'.format(worker.service))
                 self.worker_waiting(worker)
 
         elif (IDP.W_HEARTBEAT == command):
@@ -256,6 +260,11 @@ class IronDomoBroker(object):
                 worker.service = None
         if worker.identity in self.workers: 
             self.workers.pop(worker.identity)
+        if worker in self.waiting:
+            self.waiting.remove(worker)
+        logging.info('Remaining Services: {0}'.format(self.services))        
+        logging.info('Remaining Workers: {0}'.format(self.workers))        
+        logging.info('Remaining Waiting: {0}'.format(self.waiting))        
 
     def require_worker(self, address, clear):
         """Finds the worker (creates if necessary)."""
@@ -365,7 +374,7 @@ class IronDomoBroker(object):
                 logging.warning("I: deleting expired worker: %s", self.waiting[deletable].identity)
                 #del self.waiting[deletable]     
                 self.delete_worker(self.waiting[deletable],False)
-                self.waiting.pop(deletable)
+                #self.waiting.pop(deletable)
 
         
     def worker_waiting(self, worker):
