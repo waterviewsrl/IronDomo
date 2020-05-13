@@ -2,10 +2,11 @@
 from setuptools import setup, find_packages
 
 setup(name='IronDomo',
-      version='0.1.0',
+      version='1.0.0',
       author='Matteo Ferrabone',
       author_email='matteo.ferrabone@gmail.com',
       packages=find_packages(),
-      requires=['zmq']
+      requires=['zmq'],
+      download_url = 'https://github.com/desmoteo/IronDomo/releases/tag/1.0'
       )
 
