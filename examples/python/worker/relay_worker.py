@@ -18,11 +18,11 @@ class Workload(object):
     
     """
 
-    def __init__(self):
+    def __init__(self,  publisher_connection_url):
         self.ctx = zmq.Context()
         self.control_socket = self.ctx.socket(zmq.PAIR)
         self.control_socket.bind('inproc://control')
-        self.sub_thread = SubscriberThread(ctx=self.ctx)
+        self.sub_thread = SubscriberThread(publisher_connection_url=publisher_connection_url, ctx=self.ctx)
         self.sub_thread.daemon = True
         self.sub_thread.start()
 
@@ -315,9 +315,9 @@ class SubscriberThread(threading.Thread):
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 @begin.start
-def main(source_url='tcp://localhost:5555'):
+def main(source_url='tcp://localhost:5555',  publisher_connection_url='tcp://localhost:5557'):
     verbose = '-v' in sys.argv
-    workload = Workload()
+    workload = Workload(publisher_connection_url=publisher_connection_url)
     worker = IDPWorker.IronDomoWorker(source_url, b'relay', verbose, workload=workload)
 
     worker.loop()
