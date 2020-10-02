@@ -7,14 +7,15 @@ import sys
 from IronDomo  import IDPClient
 import time
 import begin
+import uuid
 
 @begin.start
 def main(service='echo', identity='echo'):
     verbose = '-v' in sys.argv
-    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity=identity)
+    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity=identity+uuid.uuid4().hex)
     count = 0
-    while True:
-        time.sleep(1)
+    loop = True
+    while loop:
         request = "Hello world {0} -> {1}".format(service, count)
         print(request)
         try:
@@ -27,6 +28,7 @@ def main(service='echo', identity='echo'):
             if reply is None:
                 break
         count += 1
+        loop = False
     print("%i requests/replies processed" % count)
 
 

@@ -22,6 +22,8 @@ import zmq.auth
 
 import json
 
+import traceback
+
 class Service(object):
     """a single Service"""
     name = None # Service name
@@ -145,7 +147,12 @@ class IronDomoBroker(object):
                 try:
                     socks = dict(self.poller.poll(self.HEARTBEAT_INTERVAL))
                 except KeyboardInterrupt:
+                    logging.warn('KeyboardInterrupt during polling: {0}'.format('Exiting!'))
                     break # Interrupted
+                except Exception as e:
+                    logging.error('Broker Error during polling: {0}'.format(e))    
+                    traceback.print_exc()
+                    raise e
                 if (self.socketclear.socket in socks):
                     self.route(self.socketclear, True)
                 elif (self.socketcurve.socket in socks):
@@ -154,6 +161,7 @@ class IronDomoBroker(object):
                 self.send_heartbeats()
             except Exception as e:
                 logging.error('Broker Error: {0}'.format(e))
+                traceback.print_exc()
                 break
 
     def destroy(self):

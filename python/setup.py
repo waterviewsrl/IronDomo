@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(name='IronDomo',
-      version='1.0.1',
+      version='1.0.2',
       author='Matteo Ferrabone',
       author_email='matteo.ferrabone@gmail.com',
       packages=find_packages(),
