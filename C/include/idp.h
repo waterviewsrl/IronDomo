@@ -1,5 +1,5 @@
 /*  =========================================================================
-    cidp.h - CIDP wrapper
+    cmdp.h - CMDP wrapper
 
     -------------------------------------------------------------------------
     Copyright (c) 1991-2012 iMatix Corporation <www.imatix.com>
@@ -22,50 +22,16 @@
     =========================================================================
 */
 
-
-//
-//  idp.h
-//  Irondomo Protocol definitions
-//
 #pragma once
 
-//  This is the version of IDP/Client we implement
-#define IDPC_CLIENT         "IDPC01"
+//  Set up environment for the application
+//
+#include <czmq.h>
+#include <idp_common.h>
 
-//  This is the version of IDP/Worker we implement
-#define IDPW_WORKER         "IDPW01"
+//  Classes listed in alphabetical order
 
-//  IDP/Server commands, as strings
-#define IDPW_READY          "\001"
-#define IDPW_REQUEST        "\002"
-#define IDPW_REPLY          "\003"
-#define IDPW_HEARTBEAT      "\004"
-#define IDPW_DISCONNECT     "\005"
-#define IDPW_REQUEST_CURVE  "\006"
-#define IDPW_REPLY_CURVE    "\007"
-
-
-static char const *idps_commands [] = {
-    nullptr, "READY", "REQUEST", "REPLY", "HEARTBEAT", "DISCONNECT", "REQUEST_CURVE", "REPLY_CURVE"
-};
-namespace IDP
-{
-class zmqInterruptedException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "ZeroMQ context was interrupted";
-  }
-};
-
-class sendFailedException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "Request Failed";
-  }
-};
-
-}
+//#include <cmdp_client.h>
+//#include <cmdp_worker.h>
 
 

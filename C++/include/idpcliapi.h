@@ -1,10 +1,8 @@
 /*  =====================================================================
- *  idcliapi.h - Majordomo Protocol Client API
- *  Implements the IDP/Worker spec at http://rfc.zeromq.org/spec:7.
+ *  idpcliapi.h - Irondomo Protocol Client API
  *  ===================================================================== */
 
-#ifndef __IDPCLIAPI_H_INCLUDED__
-#define __IDPCLIAPI_H_INCLUDED__
+#pragma once
 
 #include <string>
 #include <vector>
@@ -15,26 +13,11 @@
 
 namespace IDP
 {
-class zmqInterruptedException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "ZeroMQ context was interrupted";
-  }
-};
-
-class sendFailedException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "Request Failed";
-  }
-};
 
 class IDPClient
 {
   public:
-    IDPClient(const std::string &zmqHost, bool verbose = false, int timeout = 2500, int retries = 3);
+    IDPClient(const std::string &zmqHost, const std::string &identity, bool verbose = false, int timeout = 2500, int retries = 3);
     ~IDPClient();
 
     void setupCurve(const std::string &clientPublic, const std::string &clientPrivate, const std::string &serverPublic);
@@ -42,12 +25,15 @@ class IDPClient
     void setTimeout(int timeout);
     void setRetries(int retries);
     std::vector<std::string> send(const std::string &service, const std::vector<std::string> &parts);
+    std::vector<std::string> sendraw(const std::string &service, const std::vector<std::pair<unsigned char *, size_t>> &parts);
+
 
   private:
     std::string _zmqHost;
     std::string _clientPublic;
     std::string _clientPrivate;
     std::string _serverPublic;
+    std::string _identity;
     bool _hasCurve;
     zsock_t *_client; //  Socket to broker
     zpoller_t *_poller;
@@ -57,5 +43,3 @@ class IDPClient
     int _retries; //  Request retries
 };
 }
-
-#endif

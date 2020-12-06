@@ -21,7 +21,7 @@ def main():
 
     print('Server Key: {0}'.format(server_public))
 
-    client = IDPClient.IronDomoClient("tcp://vpn.waterview.it:5556", verbose, (server_public, client_public, client_secret))
+    client = IDPClient.IronDomoClient("tcp://127.0.0.1:5001", verbose, ('.8Q^k*3E/4-Wg4()r^(4yTk2>qvZFDW?mXUyRPvr', client_public, client_secret))
     count = 0
     while count < 100:
         request = "Hello world 1 -> {0}".format(count)

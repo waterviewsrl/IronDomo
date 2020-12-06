@@ -1,5 +1,5 @@
 //
-//  Majordomo Protocol client example
+//  Irondomo Protocol client example
 //  Uses the idcli API to hide all IDP aspects
 //
 
@@ -10,8 +10,8 @@
 int main (int argc, char *argv [])
 {
     int verbose = (argc > 1 && streq (argv [1], "-v"));
-    IDP::IDPClient *client = new IDP::IDPClient("tcp://localhost:5556", verbose);
-    client->setupCurve("4BW)6Jg0+&}3Mwq*dJTMoG^rHbD#b!2SUmr7<H0#", "aS&Z4DU7#rpbsF+.r9Ek7%Id2FzftXA^egj+VWmp", "P+S690P{iVPfx<aFJwxfSY^ugFzjuWOnaIh!o7J<");
+    IDP::IDPClient *client = new IDP::IDPClient("tcp://127.0.0.1:5001", "Client", true, 2500, 3);
+    client->setupCurve("4BW)6Jg0+&}3Mwq*dJTMoG^rHbD#b!2SUmr7<H0#", "aS&Z4DU7#rpbsF+.r9Ek7%Id2FzftXA^egj+VWmp", ".8Q^k*3E/4-Wg4()r^(4yTk2>qvZFDW?mXUyRPvr");
 
     client->startClient();
 

@@ -46,26 +46,8 @@
 
 
 static char const *idps_commands [] = {
-    nullptr, "READY", "REQUEST", "REPLY", "HEARTBEAT", "DISCONNECT", "REQUEST_CURVE", "REPLY_CURVE"
-};
-namespace IDP
-{
-class zmqInterruptedException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "ZeroMQ context was interrupted";
-  }
+    NULL, "READY", "REQUEST", "REPLY", "HEARTBEAT", "DISCONNECT", "REQUEST_CURVE", "REPLY_CURVE"
 };
 
-class sendFailedException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "Request Failed";
-  }
-};
-
-}
 
 

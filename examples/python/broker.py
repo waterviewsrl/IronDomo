@@ -1,5 +1,5 @@
 """
-Majordomo Protocol broker
+Irondomo Protocol broker
 A minimal implementation of http:#rfc.zeromq.org/spec:7 and spec:8
 
 Author: Min RK <benjaminrk@gmail.com>
