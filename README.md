@@ -22,6 +22,6 @@ Examples provide documentation of the various APIs and necessary configuration
 
 APIs are provided for C and C++ as header only distribution in order to simplify target build. 
 Examples provide documentation of the various APIs and necessary configuration
-Please find documentation on how to build and run these examples here: https://github.com/desmoteo/IronDomo/blob/master/C/examples/README.md
+Please find information on how to build and run these examples here: https://github.com/desmoteo/IronDomo/blob/master/C/examples/README.md
 
 
