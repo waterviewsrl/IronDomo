@@ -1,6 +1,6 @@
 /*  =====================================================================
  *  idcliapi.h - Irondomo Protocol Client API
- *  Implements the MDP/Worker spec at http://rfc.zeromq.org/spec:7.
+ *  Implements the IDP/Worker spec at http://rfc.zeromq.org/spec:7.
  *  ===================================================================== */
 
 #pragma once
@@ -18,6 +18,8 @@ extern "C"
 
     idcli_t *
     idcli_new(char *broker, char *identity, int verbose);
+    idcli_t *
+    idcli_new2(char *broker, char *identity, int verbose);
     void
     idcli_destroy(idcli_t **self_p);
     void
@@ -26,6 +28,10 @@ extern "C"
     idcli_set_retries(idcli_t *self, int retries);
     zmsg_t *
     idcli_send(idcli_t *self, char *service, zmsg_t **request_p);
+    int
+    idcli_send2(idcli_t *self, char *service, zmsg_t **request_p);
+    zmsg_t *
+    idcli_recv2(idcli_t *self);
 
 #ifdef __cplusplus
 }
@@ -36,6 +42,7 @@ extern "C"
 
 struct _idcli_t
 {
+    unsigned char api_version;
     char *_broker_host;
     char *_identity;
     bool _has_curve;
@@ -67,7 +74,7 @@ void idcli_connect_to_broker(idcli_t *self)
         self->_poller = NULL;
     }
 
-    self->_client = zsock_new(ZMQ_REQ);
+    self->_client = zsock_new(self->api_version == 1 ? ZMQ_REQ : ZMQ_DEALER);
     zsock_set_identity(self->_client, self->_identity);
 
     self->_poller = zpoller_new(self->_client, NULL);
@@ -103,6 +110,17 @@ idcli_new(char *broker_host, char *identity, int verbose)
     self->_client_cert = NULL;
     self->_client = NULL;
     self->_poller = NULL;
+
+    self->api_version = 1;
+
+    return self;
+}
+
+idcli_t *
+idcli_new2(char *broker_host, char *identity, int verbose)
+{
+    idcli_t *self = idcli_new(broker_host, identity, verbose);
+    self->api_version = 2;
 
     return self;
 }
@@ -192,7 +210,7 @@ idcli_send(idcli_t *self, char *service, zmsg_t **request_p)
     zmsg_t *request = *request_p;
 
     //  Prefix request with protocol frames
-    //  Frame 1: "MDPCxy" (six bytes, MDP/Client x.y)
+    //  Frame 1: "IDPCxy" (six bytes, IDP/Client x.y)
     //  Frame 2: Service name (printable string)
     zmsg_pushstr(request, service);
     zmsg_pushstr(request, IDPC_CLIENT);
@@ -271,6 +289,90 @@ idcli_send(idcli_t *self, char *service, zmsg_t **request_p)
     if (zctx_interrupted)
         printf("W: interrupt received, killing client...\n");
     zmsg_destroy(&request);
+
+    return NULL;
+}
+
+//  .until
+//  .skip
+//  The send method now just sends one message, without waiting for a
+//  reply. Since we're using a DEALER socket we have to send an empty
+//  frame at the start, to create the same envelope that the REQ socket
+//  would normally make for us:
+
+int idcli_send2(idcli_t *self, char *service, zmsg_t **request_p)
+{
+    assert(self);
+    assert(request_p);
+    zmsg_t *request = *request_p;
+
+    //  Prefix request with protocol frames
+    //  Frame 0: empty (REQ emulation)
+    //  Frame 1: "IDPCxy" (six bytes, IDP/Client x.y)
+    //  Frame 2: Service name (printable string)
+    zmsg_pushstr(request, service);
+    zmsg_pushstr(request, IDPC_CLIENT);
+    zmsg_pushstr(request, "");
+    if (self->_verbose)
+    {
+        zclock_log("I: send request to '%s' service:", service);
+        zmsg_dump(request);
+    }
+    zmsg_send(&request, self->_client);
+    return 0;
+}
+
+//  .skip
+//  The recv method takes BOOKMARK
+//  ---------------------------------------------------------------------
+//  Returns the reply message or NULL if there was no reply. Does not
+//  attempt to recover from a broker failure, this is not possible
+//  without storing all unanswered requests and resending them all...
+
+zmsg_t *
+idcli_recv2(idcli_t *self)
+{
+    assert(self);
+
+    zsock_t *which = (zsock_t *)zpoller_wait(self->_poller, self->_timeout * ZMQ_POLL_MSEC);
+
+    if (which == NULL)
+    {
+        if (zpoller_terminated(self->_poller))
+        {
+            return NULL; //  Interrupted
+        }
+    }
+
+    //  If we got a reply, process it
+    if (which == self->_client)
+    {
+        zmsg_t *msg = zmsg_recv(self->_client);
+        if (self->_verbose)
+        {
+            zclock_log("I: received reply:");
+            zmsg_dump(msg);
+        }
+        //  Don't try to handle errors, just assert noisily
+        assert(zmsg_size(msg) >= 4);
+
+        zframe_t *empty = zmsg_pop(msg);
+        assert(zframe_streq(empty, ""));
+        zframe_destroy(&empty);
+
+        zframe_t *header = zmsg_pop(msg);
+        assert(zframe_streq(header, IDPC_CLIENT));
+        zframe_destroy(&header);
+
+        zframe_t *service = zmsg_pop(msg);
+        zframe_destroy(&service);
+
+        return msg; //  Success
+    }
+    if (zctx_interrupted)
+        printf("W: interrupt received, killing client...\n");
+    else if (self->_verbose)
+        zclock_log("W: permanent error, abandoning request");
 
     return NULL;
 }

@@ -35,7 +35,7 @@ typedef struct
 } broker_t;
 
 static broker_t *
-s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char *curve_publickey, const char *curve_secretkey, int _verbose);
+s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char *curve_publickey, const char *curve_secretkey, const char *cert_store, int _verbose);
 static void
 s_broker_destroy(broker_t **self_p);
 
@@ -101,7 +101,7 @@ s_worker_waiting(worker_t *self);
 //  Here are the constructor and destructor for the broker:
 
 static broker_t *
-s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char *curve_publickey, const char *curve_secretkey, int _verbose)
+s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char *curve_publickey, const char *curve_secretkey, const char *cert_store, int _verbose)
 {
     broker_t *self = (broker_t *)zmalloc(sizeof(broker_t));
 
@@ -128,7 +128,7 @@ s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char 
             zsock_set_curve_publickey(self->_curve_socket, self->_curve_publickey);
             zsock_set_curve_secretkey(self->_curve_socket, self->_curve_secretkey);
             zsock_set_curve_server(self->_curve_socket, 1);
-            zstr_sendx(auth, "CURVE", CURVE_ALLOW_ANY, NULL);
+            zstr_sendx(auth, "CURVE", cert_store?cert_store:CURVE_ALLOW_ANY, NULL);
             zsock_wait(auth);
         }
         zsock_bind((zsock_t *)self->_curve_socket, "%s", self->_curve_endpoint);

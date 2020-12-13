@@ -1,6 +1,6 @@
 //
 //  Irondomo Protocol  CLEAR client example
-//  Uses the idcli API to hide all MDP aspects
+//  Uses the idcli API to hide all IDP aspects
 //
 
 //  Lets us build this source without creating a library

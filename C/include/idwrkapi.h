@@ -1,6 +1,6 @@
 /*  =====================================================================
  *  idwrkapi.h - Irondomo Protocol Worker API
- *  Implements the MDP/Worker spec at http://rfc.zeromq.org/spec:7.
+ *  Implements the IDP/Worker spec at http://rfc.zeromq.org/spec:7.
  *  ===================================================================== */
 
 #pragma once
@@ -17,7 +17,7 @@ extern "C"
     typedef struct _idwrk_t idwrk_t;
 
     idwrk_t *
-    idwrk_new(char *broker, char *service, int verbose);
+    idwrk_new(char *broker, char *service, char *identity, int verbose);
     void
     idwrk_destroy(idwrk_t **self_p);
     void
@@ -143,7 +143,7 @@ void idwrk_connect_to_broker(idwrk_t *self)
 //  Constructor
 
 idwrk_t *
-idwrk_new(char *broker_host, char *service, int verbose)
+idwrk_new(char *broker_host, char *service, char *identity, int verbose)
 {
     assert(broker_host);
     assert(service);
@@ -152,7 +152,7 @@ idwrk_new(char *broker_host, char *service, int verbose)
 
     self->_broker_host = strdup(broker_host);
     self->_service = strdup(service);
-    self->_identity = self->_service;
+    self->_identity = self->_service;//identity;
     self->_has_curve = false;
     self->_verbose = verbose;
     self->_heartbeat = 2500; //  msecs

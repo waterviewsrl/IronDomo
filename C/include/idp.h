@@ -1,5 +1,5 @@
 /*  =========================================================================
-    cmdp.h - CMDP wrapper
+    cidp.h - CIDP wrapper
 
     -------------------------------------------------------------------------
     Copyright (c) 1991-2012 iMatix Corporation <www.imatix.com>
@@ -31,7 +31,5 @@
 
 //  Classes listed in alphabetical order
 
-//#include <cmdp_client.h>
-//#include <cmdp_worker.h>
 
 

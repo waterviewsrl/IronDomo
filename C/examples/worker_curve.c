@@ -1,17 +1,47 @@
 //
 //  Irondomo Protocol CURVE worker example
-//  Uses the idwrk API to hide all MDP aspects
+//  Uses the idwrk API to hide all IDP aspects
 //
 
 //  Lets us build this source without creating a library
 #include "idwrkapi.h"
+#define CERTDIR "./cert_store"
+
+//Random string for identity
+char *rand_string(char *str, size_t size)
+{
+    unsigned char data[size];
+    FILE *fp;
+    fp = fopen("/dev/urandom", "r");
+    fread(&data, 1, size, fp);
+    fclose(fp);
+    const char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";
+    if (size) {
+        --size;
+        for (size_t n = 0; n < size; n++) {
+            unsigned char  key = data[n] % (unsigned char) (sizeof charset - 1);
+            str[n] = charset[key];
+        }
+        str[size] = '\0';
+    }
+    return str;
+}
+
 
 int main(int argc, char *argv[])
 {
     int verbose = (argc > 1 && streq(argv[1], "-v"));
-    idwrk_t *session = idwrk_new("tcp://localhost:5001", "echo", verbose);
+
+    char identity[32];
+    char random_part[5];
+    strcpy(identity, "echo_");
+    rand_string(random_part, 5);
+    strcat(identity,random_part);
+
+    idwrk_t *session = idwrk_new("tcp://localhost:5001", "echo", identity, verbose);
 
     zcert_t *c = zcert_new();
+    zcert_save_public(c, CERTDIR"/worker_cert.txt");
 
     const char *worker_public = zcert_public_txt(c);
     const char *worker_secret = zcert_secret_txt(c);

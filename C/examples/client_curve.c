@@ -1,10 +1,11 @@
 //
 //  Irondomo Protocol CURVE client example
-//  Uses the idcli API to hide all MDP aspects
+//  Uses the idcli API to hide all IDP aspects
 //
 
 //  Lets us build this source without creating a library
 #include "idcliapi.h"
+#define CERTDIR "cert_store"
 
 int main (int argc, char *argv [])
 {
@@ -12,6 +13,7 @@ int main (int argc, char *argv [])
     idcli_t *session = idcli_new ("tcp://localhost:5001", "EchoClient", verbose);
 
     zcert_t *c = zcert_new();
+    zcert_save_public(c, CERTDIR"/client_cert.txt");
 
     const char *client_public = zcert_public_txt(c);
     const char *client_secret = zcert_secret_txt(c);

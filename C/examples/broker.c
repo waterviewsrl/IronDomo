@@ -1,4 +1,7 @@
 #include "../include/idbrokerapi.h" 
+/*
+Example of broker with no cert store configured
+*/
 
 int main(int argc, char *argv[])
 {
@@ -12,7 +15,7 @@ int main(int argc, char *argv[])
     const char secret_key[] = "3vup%:I!lF>^QWT@[[g]dwa>1:(B-^3RWw^7tIMf";
     
 
-    broker_t *self = s_broker_new("tcp://127.0.0.1:5000", "tcp://127.0.0.1:5001", public_key, secret_key, _verbose);
+    broker_t *self = s_broker_new("tcp://127.0.0.1:5000", "tcp://127.0.0.1:5001", public_key, secret_key, NULL, _verbose);
     
     s_broker_loop(self);
   
