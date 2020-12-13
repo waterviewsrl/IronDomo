@@ -152,7 +152,7 @@ idwrk_new(char *broker_host, char *service, char *identity, int verbose)
 
     self->_broker_host = strdup(broker_host);
     self->_service = strdup(service);
-    self->_identity = self->_service;//identity;
+    self->_identity = identity;
     self->_has_curve = false;
     self->_verbose = verbose;
     self->_heartbeat = 2500; //  msecs
