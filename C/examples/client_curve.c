@@ -38,5 +38,6 @@ int main (int argc, char *argv [])
     }
     printf ("%d requests/replies processed\n", count);
     idcli_destroy (&session);
+    zcert_destroy(&c);
     return 0;
 }

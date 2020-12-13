@@ -110,6 +110,9 @@ idcli_new(char *broker_host, char *identity, int verbose)
     self->_client_cert = NULL;
     self->_client = NULL;
     self->_poller = NULL;
+    self->_client_public_key = NULL;
+    self->_client_secret_key = NULL;
+    self->_server_public_key = NULL;
 
     self->api_version = 1;
 
@@ -166,9 +169,25 @@ void idcli_destroy(idcli_t **self_p)
         }
 
         free(self->_broker_host);
-        free(self->_client_public_key);
-        free(self->_client_secret_key);
-        free(self->_server_public_key);
+        free(self->_identity);
+        if (self->_client_public_key)
+        {
+            free(self->_client_public_key);
+            self->_client_public_key = NULL;
+        }
+
+        if (self->_client_secret_key)
+        {
+            free(self->_client_secret_key);
+            self->_client_secret_key = NULL;
+        }
+
+        if (self->_server_public_key)
+        {
+            free(self->_server_public_key);
+            self->_server_public_key = NULL;
+        }
+
         free(self);
         *self_p = NULL;
     }

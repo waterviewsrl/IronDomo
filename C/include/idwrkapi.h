@@ -79,7 +79,7 @@ struct _idwrk_t
 
 static void
 idwrk_send_to_broker(idwrk_t *self, char *command, char *option,
-                       zmsg_t *msg)
+                     zmsg_t *msg)
 {
     msg = msg ? zmsg_dup(msg) : zmsg_new();
 
@@ -157,15 +157,18 @@ idwrk_new(char *broker_host, char *service, char *identity, int verbose)
     self->_verbose = verbose;
     self->_heartbeat = 2500; //  msecs
     self->_reconnect = 2500; //  msecs
-    
+
     self->_expect_reply = 0;
     self->_worker_cert = NULL;
     self->_worker_cert = NULL;
     self->_poller = NULL;
+
+    self->_worker_public_key = NULL;
+    self->_worker_secret_key = NULL;
+    self->_server_public_key = NULL;
+
     return self;
 }
-
-
 
 void idwrk_setup_curve(idwrk_t *self, const char *worker_public_key, const char *worker_secret_key, const char *server_public_key)
 {
@@ -179,7 +182,6 @@ void idwrk_setup_curve(idwrk_t *self, const char *worker_public_key, const char 
     zmq_z85_decode(sec, self->_worker_secret_key);
     zmq_z85_decode(pub, self->_worker_public_key);
     self->_worker_cert = zcert_new_from(pub, sec);
-
 }
 
 //  ---------------------------------------------------------------------
@@ -205,6 +207,24 @@ void idwrk_destroy(idwrk_t **self_p)
         {
             zcert_destroy(&(self->_worker_cert));
             self->_worker_cert = NULL;
+        }
+
+        if (self->_worker_public_key)
+        {
+            free(self->_worker_public_key);
+            self->_worker_public_key = NULL;
+        }
+
+        if (self->_worker_secret_key)
+        {
+            free(self->_worker_secret_key);
+            self->_worker_secret_key = NULL;
+        }
+
+        if (self->_server_public_key)
+        {
+            free(self->_server_public_key);
+            self->_server_public_key = NULL;
         }
 
         free(self->_broker_host);
@@ -278,7 +298,7 @@ idwrk_recv(idwrk_t *self, zmsg_t **reply_p)
         {
             if (zpoller_terminated(self->_poller))
             {
-                
+
                 break; //  Interrupted
             }
         }
@@ -312,7 +332,7 @@ idwrk_recv(idwrk_t *self, zmsg_t **reply_p)
                 //  We should pop and save as many addresses as there are
                 //  up to a null part, but for now, just save one...
                 self->_reply_to_clear = zframe_streq(command, IDPW_REQUEST) ? zmsg_unwrap(msg) : NULL;
-                self->_reply_to_curve = zframe_streq(command, IDPW_REQUEST_CURVE) ? zmsg_unwrap(msg) : NULL;     
+                self->_reply_to_curve = zframe_streq(command, IDPW_REQUEST_CURVE) ? zmsg_unwrap(msg) : NULL;
                 zframe_destroy(&command);
                 //  .split process message
                 //  Here is where we actually have a message to process; we

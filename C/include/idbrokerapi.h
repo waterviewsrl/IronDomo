@@ -18,13 +18,15 @@
 
 typedef struct
 {
-    void *_clear_socket;          //  Socket for clients & workers
-    void *_curve_socket;          //  Socket for clients & workers
-    int _verbose;                 //  Print activity to stdout
-    char *_clear_endpoint;        //  Broker binds to this endpoint for clear channel
-    char *_curve_endpoint;        //  Broker binds to this endpoint for curve channel
-    char *_curve_secretkey;       //  Broker binds to this endpoint for curve channel
-    char *_curve_publickey;       //  Broker binds to this endpoint for curve channel
+    void *_clear_socket;    //  Socket for clients & workers
+    void *_curve_socket;    //  Socket for clients & workers
+    int _verbose;           //  Print activity to stdout
+    char *_clear_endpoint;  //  Broker binds to this endpoint for clear channel
+    char *_curve_endpoint;  //  Broker binds to this endpoint for curve channel
+    char *_curve_secretkey; //  Broker binds to this endpoint for curve channel
+    char *_curve_publickey; //  Broker binds to this endpoint for curve channel
+    zpoller_t *_poller;
+    zactor_t *_auth;
     zhash_t *_services;           //  Hash of known services
     zhash_t *_workers;            //  Hash of known workers
     zlist_t *_waiting;            //  List of waiting workers
@@ -122,14 +124,14 @@ s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char 
         if (curve_secretkey != NULL && curve_publickey != NULL)
         {
             zclock_log("I: Setting up CURVE credentials for socket active at %s", self->_curve_endpoint);
-            zactor_t *auth = zactor_new(zauth, NULL);
-            zstr_send(auth, "VERBOSE");
-            zsock_wait(auth);
+            self->_auth = zactor_new(zauth, NULL);
+            zstr_send(self->_auth, "VERBOSE");
+            zsock_wait(self->_auth);
             zsock_set_curve_publickey(self->_curve_socket, self->_curve_publickey);
             zsock_set_curve_secretkey(self->_curve_socket, self->_curve_secretkey);
             zsock_set_curve_server(self->_curve_socket, 1);
-            zstr_sendx(auth, "CURVE", cert_store?cert_store:CURVE_ALLOW_ANY, NULL);
-            zsock_wait(auth);
+            zstr_sendx(self->_auth, "CURVE", cert_store ? cert_store : CURVE_ALLOW_ANY, NULL);
+            zsock_wait(self->_auth);
         }
         zsock_bind((zsock_t *)self->_curve_socket, "%s", self->_curve_endpoint);
     }
@@ -148,6 +150,18 @@ s_broker_new(const char *clear_endpoint, const char *curve_endpoint, const char 
     self->_heartbeat_interval = HEARTBEAT_INTERVAL;
     self->_heartbeat_liveness = HEARTBEAT_LIVENESS;
     self->_heartbeat_at = zclock_time() + HEARTBEAT_INTERVAL;
+
+    self->_poller = zpoller_new(NULL);
+
+    // Add a reader to the existing poller
+    int rc = zpoller_add(self->_poller, self->_clear_socket);
+    assert(rc == 0);
+    if (self->_curve_socket)
+    {
+        rc = zpoller_add(self->_poller, self->_curve_socket);
+        assert(rc == 0);
+    }
+
     return self;
 }
 
@@ -166,6 +180,29 @@ s_broker_destroy(broker_t **self_p)
         if (self->_curve_socket)
             zsock_destroy((zsock_t **)&self->_curve_socket);
 
+        free(self->_clear_endpoint);
+        self->_clear_endpoint = NULL;
+
+        if (self->_curve_endpoint)
+        {
+            free(self->_curve_endpoint);
+            self->_curve_endpoint = NULL;
+        }
+
+        if (self->_curve_publickey)
+        {
+            free(self->_curve_publickey);
+            self->_curve_publickey = NULL;
+        }
+
+        if (self->_curve_secretkey)
+        {
+            free(self->_curve_secretkey);
+            self->_curve_secretkey = NULL;
+        }
+
+        zpoller_destroy(&(self->_poller));
+        zactor_destroy(&(self->_auth));
         free(self);
         *self_p = NULL;
     }
@@ -500,25 +537,12 @@ int s_broker_loop(broker_t *self)
 {
     while (true)
     {
-
-        zpoller_t *poller = zpoller_new(NULL);
-        assert(poller);
-
-        // Add a reader to the existing poller
-        int rc = zpoller_add(poller, self->_clear_socket);
-        assert(rc == 0);
-        if (self->_curve_socket)
-        {
-            rc = zpoller_add(poller, self->_curve_socket);
-            assert(rc == 0);
-        }
-
-        zsock_t *which = (zsock_t *)zpoller_wait(poller, HEARTBEAT_INTERVAL * ZMQ_POLL_MSEC);
+        zsock_t *which = (zsock_t *)zpoller_wait(self->_poller, HEARTBEAT_INTERVAL * ZMQ_POLL_MSEC);
 
         //int rc = zmq_poll (items, 1, HEARTBEAT_INTERVAL * ZMQ_POLL_MSEC);
         if (which == NULL)
         {
-            if (zpoller_terminated(poller))
+            if (zpoller_terminated(self->_poller))
             {
                 break; //  Interrupted
             }

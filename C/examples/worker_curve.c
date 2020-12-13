@@ -61,5 +61,6 @@ int main(int argc, char *argv[])
         reply = request; //  Echo is complex... :-)
     }
     idwrk_destroy(&session);
+    zcert_destroy(&c);
     return 0;
 }
