@@ -1,3 +1,4 @@
+mkdir cert_store
 gcc -g -I . -I ../include/  broker.c -lczmq -lzmq -o broker
 gcc -g -I . -I ../include/  broker_certstore.c -lczmq -lzmq -o broker_certstore
 gcc -g -I . -I ../include/  client_clear.c -lczmq -lzmq -o client_clear
