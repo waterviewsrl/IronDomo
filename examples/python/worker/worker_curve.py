@@ -37,7 +37,7 @@ def main():
  
     workload = Workload()
 
-    worker = IDPWorker.IronDomoWorker("tcp://localhost:5556", b"echo", verbose, (server_public, client_public, client_secret), workload=workload)
+    worker = IDPWorker.IronDomoWorker("tcp://localhost:5556", b"echo", verbose, ('P+S690P{iVPfx<aFJwxfSY^ugFzjuWOnaIh!o7J<', client_public, client_secret), workload=workload)
 
     worker.loop()
 

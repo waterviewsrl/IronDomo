@@ -5,7 +5,7 @@ Author: Matteo Ferrabone <matteo.ferrabone@gmail.com>
 
 import logging
 
-import zmq
+import zmq.green as zmq
 
 from IronDomo import IDP
 

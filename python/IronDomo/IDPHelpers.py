@@ -8,10 +8,12 @@ import binascii
 import os
 from random import randint
 
-import zmq
+#import zmq
 
 from zmq.utils.monitor import recv_monitor_message
 from zmq.auth.thread import ThreadAuthenticator
+from zmq.auth import CURVE_ALLOW_ANY
+import zmq.green as zmq
 import logging
 import threading 
 
@@ -290,7 +292,7 @@ class Subscriber(ZSocket):
         logging.warning('Subscriber on "{}"'.format(self.connection_string))
 
 class CurveAuthenticator(object):
-    def __init__(self, ctx, domain='*', location=zmq.auth.CURVE_ALLOW_ANY, callback = None):
+    def __init__(self, ctx, domain='*', location=CURVE_ALLOW_ANY, callback = None):
         
         self._domain = domain
         self._location = location
