@@ -12,7 +12,7 @@ import uuid
 @begin.start
 def main(service='echo', identity='echo'):
     verbose = '-v' in sys.argv
-    client = IDPClient.IronDomoClient("tcp://localhost:5000", verbose, identity=identity+uuid.uuid4().hex)
+    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity=identity+uuid.uuid4().hex)
     count = 0
     loop = True
     while loop:
@@ -28,7 +28,6 @@ def main(service='echo', identity='echo'):
             if reply is None:
                 break
         count += 1
-        loop = False
     print("%i requests/replies processed" % count)
 
 

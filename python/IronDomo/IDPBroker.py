@@ -252,6 +252,8 @@ class IronDomoBroker(object):
 
         elif (IDP.W_HEARTBEAT == command):
             if (worker_ready):
+                if worker in self.waiting:
+                    self.waiting.append(self.waiting.pop(self.waiting.index(worker)))
                 worker.expiry = time.time() + 1e-3*self.HEARTBEAT_EXPIRY
             else:
                 logging.warning(
@@ -377,7 +379,7 @@ class IronDomoBroker(object):
 
             self.heartbeat_at = time.time() + 1e-3*self.HEARTBEAT_INTERVAL
 
-    def purge_workers(self, service=None):
+    def purge_workers(self):
         """Look for & kill expired workers.
 
         Workers are oldest to most recent, so we stop at the first alive worker.
@@ -385,19 +387,21 @@ class IronDomoBroker(object):
 
         deletable = []
 
-        waiting_list = service.waiting if service is not None else self.waiting
+        waiting_list = self.waiting
 
         now = time.time()
 
         for w in waiting_list:
             if w.expiry < now:
                 deletable.append(w)
+            else:
+                break
 
         for w in deletable:
             logging.warning("I: deleting expired worker: %s", w.identity)
             self.delete_worker(w, False)
 
-    def purge_workers_old(self):
+    def purge_workers_old(self, service=None):
         """Look for & kill expired workers.
 
         Workers are oldest to most recent, so we stop at the first alive worker.
@@ -414,7 +418,7 @@ class IronDomoBroker(object):
                     break
 
             if deletable != None:
-                logging.warning("I: deleting expired worker: %s",
+                logging.warning("I: Deleting expired worker: %s",
                                 self.waiting[deletable].identity)
                 #del self.waiting[deletable]
                 self.delete_worker(self.waiting[deletable], False)
@@ -433,7 +437,7 @@ class IronDomoBroker(object):
         assert (service is not None)
         if msg is not None:  # Queue message if any
             service.requests.append((msg, clear))
-        self.purge_workers(service)
+        self.purge_workers()
         while service.waiting and service.requests:
             msg, cl = service.requests.pop(0)
             worker = service.waiting.pop(0)
