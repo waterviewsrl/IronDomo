@@ -12,15 +12,15 @@ import uuid
 @begin.start
 def main(service='echo', identity='echo'):
     verbose = '-v' in sys.argv
-    client = IDPClient.IronDomoClient("tcp://localhost:5555", verbose, identity=identity+uuid.uuid4().hex)
+    client = IDPClient.IronDomoClient("tcp://localhost:6555", verbose, identity=identity+uuid.uuid4().hex)
     count = 0
     loop = True
-    while loop:
-        request = "Hello world {0} -> {1}".format(service, count)
-        print(request)
+    request = bytearray(os.urandom(1000000))
+    while count < 10000:
+        #request = "Hello world {0} -> {1}".format(service, count)
         try:
-            reply = client.send(service.encode(), [request.encode(), b'parte2'])
-            print(reply)
+            reply = client.send(service.encode(), request)#[request.encode(), b'parte2'])
+            print('Message: {0}'.format(count))
         except KeyboardInterrupt:
             break
         else:

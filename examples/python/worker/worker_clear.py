@@ -14,17 +14,18 @@ class Workload(object):
 
     def __init__(self):
         self.pre = 'ECHOXXX'
+        self.count = 0
 
     def do(self, request):
-        logging.warning('Sleepo: {0}'.format(request))
+        logging.warning('Message: {0}'.format(self.count))
         #time.sleep(1)
         reply = [] 
-        for part in request:
-            reply.append(part) # Echo is complex... :-)
-        return reply
+        #for part in request:
+        #    reply.append(part) # Echo is complex... :-)
+        return [b'OK']
 
 @begin.start
-def main(clear_url='tcp://localhost:5555', service='echo'):
+def main(clear_url='tcp://localhost:6555', service='echo'):
     verbose = '-v' in sys.argv
     workload = Workload()
     worker = IDPWorker.IronDomoWorker(clear_url, service.encode(), verbose, workload= workload)

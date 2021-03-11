@@ -131,19 +131,19 @@ class IronDomoBroker(object):
     # ---------------------------------------------------------------------
 
     def route(self, socket, clear=None):
-        msg = socket.recv()
-        sender = msg.pop(0)
+        msg = socket.recv(copy=False)
+        sender = msg.pop(0).buffer
         if self.verbose:
             logging.info("I: received message from: {0}".format(sender))
             dump(msg)
 
         empty = msg.pop(0)
-        assert empty == b''
+        assert empty.buffer == b''
         header = msg.pop(0)
 
-        if (IDP.C_CLIENT == header):
+        if (IDP.C_CLIENT == header.buffer):
             self.process_client(sender, msg, clear)
-        elif (IDP.W_WORKER == header):
+        elif (IDP.W_WORKER == header.buffer):
             self.process_worker(sender, msg, clear)
         else:
             logging.error("E: invalid message:")
@@ -184,7 +184,7 @@ class IronDomoBroker(object):
         """Process a request coming from a client."""
         logging.info("I: received message fromi client: {0}".format(sender))
         assert len(msg) >= 2  # Service name + body
-        service = msg.pop(0)
+        service = msg.pop(0).buffer.tobytes()
         # Set reply return address to client sender
         msg = [sender, b''] + msg
         if service.startswith(self.INTERNAL_SERVICE_PREFIX):
@@ -201,7 +201,7 @@ class IronDomoBroker(object):
         """Process message sent to us by a worker."""
         assert len(msg) >= 1  # At least, command
 
-        command = msg.pop(0)
+        command = msg.pop(0).buffer
 
         worker_ready = sender in self.workers
 
@@ -237,7 +237,7 @@ class IronDomoBroker(object):
 
         elif (IDP.W_READY == command):
             assert len(msg) >= 1  # At least, a service name
-            service = msg.pop(0)
+            service = msg.pop(0).buffer.tobytes()
             # Not first command in session or Reserved service name
             if (worker_ready or service.startswith(self.INTERNAL_SERVICE_PREFIX)):
                 logging.warning(

@@ -21,13 +21,14 @@ def main():
 
     print('Server Key: {0}'.format(server_public))
 
-    client = IDPClient.IronDomoClient("tcp://127.0.0.1:5556", verbose, ('P+S690P{iVPfx<aFJwxfSY^ugFzjuWOnaIh!o7J<', client_public, client_secret))
+    client = IDPClient.IronDomoClient("tcp://127.0.0.1:6556", verbose, ('P+S690P{iVPfx<aFJwxfSY^ugFzjuWOnaIh!o7J<', client_public, client_secret))
     count = 0
-    while count < 100:
-        request = "Hello world 1 -> {0}".format(count)
+    request = bytearray(os.urandom(1000000))
+    while count < 1000:
+        #request = "Hello world 1 -> {0}".format(count)
         try:
-            reply = client.send(b"echo", request.encode())
-            print(reply)
+            reply = client.send(b"echo", request)#.encode())
+            print('Message: {0}'.format(count))
         except KeyboardInterrupt:
             break
         else:

@@ -34,7 +34,7 @@ def dump(msg_or_socket):
     print("----------------------------------------")
     for part in msg:
         print("[%03d]" % len(part), end=' ')
-        is_text = True
+        part = part.buffer.tobytes() if isinstance(part, zmq.sugar.frame.Frame) else part
         try:
             print(part.decode('ascii'))
         except UnicodeDecodeError:
@@ -217,11 +217,11 @@ class ZSocket:
     def unsubscribe(self, channel):
          self.socket.setsockopt(zmq.UNSUBSCRIBE, channel.encode())
 
-    def send(self, data):
-        self.socket.send_multipart(data)
+    def send(self, data, copy=False):
+        self.socket.send_multipart(data, copy=copy)
 
-    def recv(self):
-        message = self.socket.recv_multipart()   
+    def recv(self, copy=True):
+        message = self.socket.recv_multipart(copy=copy)   
 
         return message
     
