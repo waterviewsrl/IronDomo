@@ -153,22 +153,17 @@ class IronDomoBroker(object):
         """Main broker work happens here"""
         while True:
             try:
-                try:
-                    socks = dict(self.poller.poll(self.HEARTBEAT_INTERVAL))
-                except KeyboardInterrupt:
-                    logging.warn(
-                        'KeyboardInterrupt during polling: {0}'.format('Exiting!'))
-                    break  # Interrupted
-                except Exception as e:
-                    logging.error('Broker Error during polling: {0}'.format(e))
-                    traceback.print_exc()
-                    raise e
+                socks = dict(self.poller.poll(self.HEARTBEAT_INTERVAL))
                 if (self.socketclear.socket in socks):
                     self.route(self.socketclear, True)
                 elif (self.socketcurve.socket in socks):
                     self.route(self.socketcurve, False)
 
                 self.send_heartbeats()
+            except KeyboardInterrupt:
+                logging.warn(
+                    'KeyboardInterrupt during polling: {0}'.format('Exiting!'))
+                break  # Interrupted
             except Exception as e:
                 logging.error('Broker Error: {0}'.format(e))
                 traceback.print_exc()
@@ -182,7 +177,6 @@ class IronDomoBroker(object):
 
     def process_client(self, sender, msg, clear=None):
         """Process a request coming from a client."""
-        logging.info("I: received message fromi client: {0}".format(sender))
         assert len(msg) >= 2  # Service name + body
         service = msg.pop(0).buffer.tobytes()
         # Set reply return address to client sender
