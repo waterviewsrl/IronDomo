@@ -240,9 +240,9 @@ class IronDomoBroker(object):
                 self.delete_worker(worker, True)
             else:
                 # Attach worker to service and mark as idle
-                logging.warning('Attaching: {0}'.format(worker.identity))
+                logging.info('Attaching: {0}'.format(worker.identity))
                 worker.service = self.require_service(service)
-                logging.warning('worker.service: {0}'.format(worker.service))
+                logging.info('worker.service: {0}'.format(worker.service))
                 self.worker_waiting(worker)
 
         elif (IDP.W_HEARTBEAT == command):
@@ -292,7 +292,7 @@ class IronDomoBroker(object):
             worker = Worker(identity, address, self.HEARTBEAT_EXPIRY, clear)
             self.workers[identity] = worker
             if self.verbose:
-                logging.warning("I: registering new worker: %s", identity)
+                logging.info("I: registering new worker: %s", identity)
 
         return worker
 
@@ -305,11 +305,11 @@ class IronDomoBroker(object):
 
     def require_service(self, name):
         """Locates the service (creates if necessary)."""
-        logging.warning('Requiring  Service: {0}'.format(name))
+        logging.info('Requiring  Service: {0}'.format(name))
         assert (name is not None)
         service = self.services.get(name, None)
         if (service is None):
-            logging.warning('Requiring NEW Service: {0}'.format(name))
+            logging.info('Requiring NEW Service: {0}'.format(name))
             service = Service(name)
             self.services[name] = service
 
@@ -339,14 +339,14 @@ class IronDomoBroker(object):
             for serv in self.services:
                 sl.append(serv.decode())
             returncode = json.dumps({'services': sl}).encode()
-            logging.warning('mmi.services : {0}'.format(returncode))
+            logging.info('mmi.services : {0}'.format(returncode))
         if b"mmi.workers" == service:
             name = msg[-1]
             wl = []
             for w in self.workers:
                 wl.append(w.decode())
             returncode = json.dumps({'workers': wl}).encode()
-            logging.warning('mmi.services : {0}'.format(returncode))
+            logging.info('mmi.services : {0}'.format(returncode))
         msg[-1] = returncode
 
         # insert the protocol header and service name after the routing envelope ([client, ''])
@@ -368,7 +368,7 @@ class IronDomoBroker(object):
             if((self.credentialsPath is not None) and (self.credentialsCallback is None)):
                 self.loadKeys()
             for worker in self.waiting:
-                logging.warning(
+                logging.debug(
                     'Heart: {0} -> {1} '.format(worker.identity, worker.service.name))
                 self.send_to_worker(worker, IDP.W_HEARTBEAT, None, None)
 
@@ -393,7 +393,7 @@ class IronDomoBroker(object):
                 break
 
         for w in deletable:
-            logging.warning("I: deleting expired worker: %s", w.identity)
+            logging.info("I: deleting expired worker: %s", w.identity)
             self.delete_worker(w, False)
 
     def purge_workers_old(self, service=None):
@@ -413,7 +413,7 @@ class IronDomoBroker(object):
                     break
 
             if deletable != None:
-                logging.warning("I: Deleting expired worker: %s",
+                logging.info("I: Deleting expired worker: %s",
                                 self.waiting[deletable].identity)
                 #del self.waiting[deletable]
                 self.delete_worker(self.waiting[deletable], False)
