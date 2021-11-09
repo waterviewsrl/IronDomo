@@ -57,7 +57,7 @@ class IronDomoWorker(object):
         self.workload = workload
         self.idle_timeout = idle_timeout
         self.reconnect_to_broker()
-        logging.info("Loggin: {0}".format(self.identity))
+        logging.info("Worker: {0}".format(self.identity))
 
 
     def loop(self):
@@ -70,7 +70,7 @@ class IronDomoWorker(object):
 
         self.worker.close()
 
-        logging.warning('Exiting service: {0}'.format(self.service))
+        logging.info('Exiting service: {0}'.format(self.service))
 
     def reconnect_to_broker(self):
         """Connect or reconnect to broker"""
@@ -83,7 +83,7 @@ class IronDomoWorker(object):
         if (self.credentials is not None):
             self.worker.setup_curve((self.credentials[1], self.credentials[2]), self.credentials[0])
         self.worker.connect()
-        logging.warning("I: After CONNECT ({0})".format(self.credentials))
+        logging.info("I: After CONNECT ({0})".format(self.credentials))
         self.poller.register(self.worker.socket, zmq.POLLIN)
         if self.verbose:
             logging.info("I: connecting to broker at %s...", self.broker)
@@ -181,7 +181,7 @@ class IronDomoWorker(object):
 
                     return msg # We have a request to process
                 elif command == IDP.W_HEARTBEAT:
-                    logging.info('Received W_HEARTBEAT: {0}'.format(self.service))
+                    logging.debug('Received W_HEARTBEAT: {0}'.format(self.service))
                     # Do nothing for heartbeats
                     pass
                 elif command == IDP.W_DISCONNECT:

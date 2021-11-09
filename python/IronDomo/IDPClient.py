@@ -62,7 +62,7 @@ class IronDomoClient(object):
             request = [request]
         request = [IDP.C_CLIENT, service] + request
         if self.verbose:
-            logging.warn("I: send request to '%s' service: ", service)
+            logging.info("I: send request to '%s' service: ", service)
             dump(request)
         reply = None
 
