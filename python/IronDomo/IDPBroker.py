@@ -133,6 +133,7 @@ class IronDomoBroker(object):
     def route(self, socket, clear=None):
         msg = socket.recv(copy=False)
         sender = msg.pop(0).buffer
+        sender = sender.toreadonly()
         if self.verbose:
             logging.info("I: received message from: {0}".format(sender))
             dump(msg)

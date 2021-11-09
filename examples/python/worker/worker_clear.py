@@ -17,7 +17,7 @@ class Workload(object):
         self.count = 0
 
     def do(self, request):
-        logging.warning('Message: {0}'.format(self.count))
+        logging.warning('Message: {0}'.format(len(request[0])))
         #time.sleep(1)
         reply = [] 
         #for part in request:
