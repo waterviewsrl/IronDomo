@@ -25,6 +25,8 @@ import json
 
 import traceback
 
+import platform
+
 
 class Service(object):
     """a single Service"""
@@ -128,12 +130,18 @@ class IronDomoBroker(object):
         self.poller.register(self.socketclear.socket, zmq.POLLIN)
         self.poller.register(self.socketcurve.socket, zmq.POLLIN)
 
+        self.nolegacy = platform.python_version() >= '3.8.0'
+
     # ---------------------------------------------------------------------
 
     def route(self, socket, clear=None):
         msg = socket.recv(copy=False)
         sender = msg.pop(0).buffer
-        sender = sender.toreadonly()
+        if self.nolegacy:
+            sender = sender.toreadonly()
+        else:
+            sender = sender.tobytes()
+
         if self.verbose:
             logging.info("I: received message from: {0}".format(sender))
             dump(msg)
