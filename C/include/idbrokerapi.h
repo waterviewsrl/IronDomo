@@ -279,7 +279,7 @@ s_broker_worker_msg(broker_t *self, zframe_t *sender, zmsg_t *msg, bool clear)
         zclock_log("E: invalid input message");
         zmsg_dump(msg);
     }
-    free(command);
+    zframe_destroy(&command);
     zmsg_destroy(&msg);
 }
 
